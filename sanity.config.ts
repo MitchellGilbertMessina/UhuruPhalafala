@@ -6,7 +6,7 @@ const config = defineConfig({
 
     projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
     dataset: process.env.NEXT_PUBLIC_SANITY_DATASET!,
-    title: "Empty Labs Website",
+    title: "Uhuru Phalafala Wesite",
     apiVersion: "2024-04-30",
     basePath: "/admin",
     plugins: [structureTool()],

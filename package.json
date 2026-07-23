@@ -1,5 +1,5 @@
 {
-  "name": "emptylabs-website",
+  "name": "UhuruPhalafala",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,12 +10,16 @@
   },
   "dependencies": {
     "@portabletext/react": "^4.0.3",
+    "@sanity/image-url": "^1.2.0",
+    "@sanity/vision": "^4.22.0",
+    "framer-motion": "^12.42.2",
     "next": "^15.5.15",
-    "next-sanity": "^10.0.10",
+    "next-sanity": "^10.1.4",
     "postcss": "^8.5.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "sanity": "^4.4.1"
+    "sanity": "^4.22.0",
+    "styled-components": "^6.4.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
