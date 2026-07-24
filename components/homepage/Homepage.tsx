@@ -1,19 +1,34 @@
 "use client";
 
-import Header from "../layout/Header";
-import Navigation from "../navigation/Navigation";
+import { useState } from "react";
+
+import Header from "@/components/layout/Header";
+import { homeSections } from "@/lib/homeSections";
+
+import Panel from "./Panel";
+import AboutOverlay from "./AboutOverlay";
 
 export default function Homepage() {
-  return (
-    <main
-      className="flex h-screen flex-col"
-      style={{
-        background: "#C0BCC6",
-      }}
-    >
-      <Header />
+  const [aboutOpen, setAboutOpen] = useState(false);
 
-      <Navigation />
-    </main>
+  return (
+    <div className="flex h-screen flex-col">
+      <Header
+        aboutOpen={aboutOpen}
+        onAboutClick={() => setAboutOpen(!aboutOpen)}
+      />
+
+      <div className="flex flex-1">
+        {homeSections.map((section) => (
+          <Panel
+            key={section.href}
+            section={section}
+            aboutOpen={aboutOpen}
+          />
+        ))}
+
+        <AboutOverlay open={aboutOpen} />
+      </div>
+    </div>
   );
 }

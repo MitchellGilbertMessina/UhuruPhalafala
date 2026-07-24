@@ -1,15 +1,20 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { siteConfig } from "@/lib/siteConfig";
 
 interface HeaderProps {
-  onAboutClick?: () => void;
+  aboutOpen: boolean;
+  onAboutClick: () => void;
 }
 
-export default function Header({ onAboutClick }: HeaderProps) {
+export default function Header({
+  aboutOpen,
+  onAboutClick,
+}: HeaderProps) {
   return (
     <header
-      className="flex items-center justify-between border-b border-black/20 px-8"
+      className="flex justify-between items-center border-b border-black/20 px-10"
       style={{
         height: "72px",
         background: siteConfig.colours.homepage,
@@ -17,7 +22,7 @@ export default function Header({ onAboutClick }: HeaderProps) {
     >
       <h1
         style={{
-          fontFamily: siteConfig.typography.fontFamily,
+          fontFamily: "Georgia",
           fontSize: "2rem",
           fontWeight: 400,
         }}
@@ -25,12 +30,18 @@ export default function Header({ onAboutClick }: HeaderProps) {
         {siteConfig.site.title}
       </h1>
 
-      <button
+      <motion.button
+        animate={{
+          rotate: aboutOpen ? 180 : 0,
+        }}
+        transition={{
+          duration: 0.6,
+        }}
         onClick={onAboutClick}
-        className="cursor-pointer text-4xl"
+        className="text-5xl cursor-pointer"
       >
         &lt;
-      </button>
+      </motion.button>
     </header>
   );
 }
