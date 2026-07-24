@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { siteConfig } from "@/lib/siteConfig";
 
 interface HeaderProps {
-  aboutOpen: boolean;
-  onAboutClick: () => void;
+  aboutOpen?: boolean;
+  onAboutClick?: () => void;
 }
 
 export default function Header({
@@ -30,18 +30,20 @@ export default function Header({
         {siteConfig.site.title}
       </h1>
 
-      <motion.button
-        animate={{
-          rotate: aboutOpen ? 180 : 0,
-        }}
-        transition={{
-          duration: 0.6,
-        }}
-        onClick={onAboutClick}
-        className="text-5xl cursor-pointer"
-      >
-        &lt;
-      </motion.button>
+      {onAboutClick && (
+        <motion.button
+          animate={{
+            rotate: aboutOpen ? 180 : 0,
+          }}
+          transition={{
+            duration: 0.6,
+          }}
+          onClick={onAboutClick}
+          className="cursor-pointer text-5xl"
+        >
+          &lt;
+        </motion.button>
+      )}
     </header>
   );
 }
