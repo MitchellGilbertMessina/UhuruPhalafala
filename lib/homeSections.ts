@@ -1,58 +1,58 @@
 export interface HomeSection {
-  title: string;
-  href: string;
+    title: string;
+    href: string;
 
-  colour: string;
-  hoverColour: string;
+    colour: string;
+    hoverColour: string;
 
-  metadata: {
-    type: string;
-    years: string;
-  };
+    preview: {
+        heading: string;
+        description: string;
+    };
 }
 
 export const homeSections: HomeSection[] = [
-  {
-    title: "Reeds",
-    href: "/reeds",
-    colour: "#C0BCC6",
-    hoverColour: "#B4B0BA",
-    metadata: {
-      type: "Projects",
-      years: "2018–Present",
+    {
+        title: "Reeds",
+        href: "/reeds",
+        colour: "#C0BCC6",
+        hoverColour: "#e9e5d0",
+        preview: {
+            heading: "Poetry • Essays",
+            description: "Writing, research and published texts.",
+        },
     },
-  },
 
-  {
-    title: "Rites",
-    href: "/rites",
-    colour: "#C0BCC6",
-    hoverColour: "#B4B0BA",
-    metadata: {
-      type: "Projects",
-      years: "2018–Present",
+    {
+        title: "Rites",
+        href: "/rites",
+        colour: "#C0BCC6",
+        hoverColour: "#e9e5d0",
+        preview: {
+            heading: "Poetry • Essays",
+            description: "Writing, research and published texts.",
+        },
     },
-  },
 
-  {
-    title: "Reels",
-    href: "/reels",
-    colour: "#C0BCC6",
-    hoverColour: "#B4B0BA",
-    metadata: {
-      type: "Projects",
-      years: "2018–Present",
+    {
+        title: "Reels",
+        href: "/reels",
+        colour: "#C0BCC6",
+        hoverColour: "#e9e5d0",
+        preview: {
+            heading: "Poetry • Essays",
+            description: "Writing, research and published texts.",
+        },
     },
-  },
 
-  {
-    title: "Sensuous Heirlooms",
-    href: "/heirlooms",
-    colour: "#C0BCC6",
-    hoverColour: "#B4B0BA",
-    metadata: {
-      type: "Publication",
-      years: "Ongoing",
+    {
+        title: "Sensuous Heirlooms",
+        href: "/heirlooms",
+        colour: "#C0BCC6",
+        hoverColour: "#e9e5d0",
+        preview: {
+            heading: "Poetry • Essays",
+            description: "Writing, research and published texts.",
+        },
     },
-  },
 ];

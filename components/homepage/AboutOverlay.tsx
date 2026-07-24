@@ -15,7 +15,7 @@ export default function AboutOverlay({
       layout
       initial={false}
       animate={{
-        flex: open ? 2.8 : 0,
+        flex: open ? 6 : 0,
         opacity: open ? 1 : 0,
       }}
       transition={{
