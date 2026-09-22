@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import ComingSoon from "@/components/sensuousheirlooms/ComingSoon";
+
 export const metadata: Metadata = {
   title: "Sensuous Heirlooms",
   description: "Sensuous Heirlooms by Uhuru Phalafala.",
@@ -16,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function HeirloomsPage() {
-  return <div>Sensuous Heirlooms</div>;
+  return <ComingSoon />;
 }
