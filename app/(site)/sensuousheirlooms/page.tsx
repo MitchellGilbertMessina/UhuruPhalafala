@@ -16,5 +16,5 @@ export const metadata: Metadata = {
 };
 
 export default function HeirloomsPage() {
-  return <div>Sensuous Heirlooms</div>;
+  return <div>Sensuous Heirlooms !</div>;
 }
