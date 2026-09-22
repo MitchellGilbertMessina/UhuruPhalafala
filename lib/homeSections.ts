@@ -47,7 +47,7 @@ export const homeSections: HomeSection[] = [
 
     {
         title: "Sensuous Heirlooms",
-        href: "/heirlooms",
+        href: "/sensuousheirlooms",
         colour: "#C0BCC6",
         hoverColour: "#e9e5d0",
         preview: {

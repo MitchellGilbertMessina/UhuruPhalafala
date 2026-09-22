@@ -1,3 +1,3 @@
 export default function HeirloomsPage() {
-  return <div>Heirlooms</div>;
+  return <div>Sensuous Heirlooms</div>;
 }

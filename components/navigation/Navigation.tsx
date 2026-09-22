@@ -17,7 +17,7 @@ const sections = [
   },
   {
     title: "Sensuous Heirlooms",
-    href: "/heirlooms",
+    href: "/sensuousheirlooms",
   },
 ];
 
