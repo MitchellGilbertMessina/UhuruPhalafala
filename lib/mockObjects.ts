@@ -5,7 +5,7 @@ export const mockObjects = [
     publisher: "University of Johannesburg Press",
     date: "2023",
     tags: ["Poetry"],
-    image: "/placeholde-book.jpg",
+    image: "/placeholder-book.jpg",
     x: 200,
     y: 100,
   },
