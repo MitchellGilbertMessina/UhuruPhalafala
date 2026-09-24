@@ -26,7 +26,7 @@ export default function ComingSoon() {
             }}
           >
             <p className="mb-8">
-              ‘Rutang bana ditaola, le se ye natšo badimong’
+              <strong>‘Rutang bana ditaola, le se ye natšo badimong’</strong>
             </p>
 
             <p className="mb-8">
