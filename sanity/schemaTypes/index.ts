@@ -1,7 +1,9 @@
-import siteSettings from "../schemas/siteSettings";
-import project from '../schemas/project-schema';
+import project from "./project-schema";
+import siteSettings from "./siteSettings";
+import { chapter } from "./chapter";
 
 export const schemaTypes = [
   project,
-  siteSettings
+  chapter,
+  siteSettings,
 ];
