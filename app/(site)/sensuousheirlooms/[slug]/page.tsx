@@ -1,29 +1,34 @@
-import { getChapter } from "@/sanity/sanity-utils";
-import { PortableText } from "@portabletext/react";
-import Link from "next/link";
 
-export default async function ChapterPage({
+import { getImageChapters } from "@/sanity/sanity-utils";
+import ImagePublicationReader from "@/components/publication/ImagePublicationReader";
+
+export default async function ImageChapterPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ view?: string }>;
 }) {
-  const { slug } = await params;
-  const chapter = await getChapter(slug);
+  const [{ slug }, query] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+
+  const chapters = await getImageChapters();
+
+  const chapter = chapters.find((item) => item.slug === slug);
 
   if (!chapter) {
-    return <div>Chapter not found.</div>;
+    return <main>Chapter not found.</main>;
   }
 
+  const initialView = query.view === "spread" ? "spread" : "scroll";
+
   return (
-    <main>
-      <Link href="/sensuousheirlooms">
-        ← Sensuous Heirlooms
-      </Link>
-
-      <h1>{chapter.title}</h1>
-      <p>{chapter.contributor}</p>
-
-      <PortableText value={chapter.content} />
-    </main>
+    <ImagePublicationReader
+      chapters={chapters}
+      initialSlug={slug}
+      initialView={initialView}
+    />
   );
 }

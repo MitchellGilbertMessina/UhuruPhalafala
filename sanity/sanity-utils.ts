@@ -3,6 +3,7 @@ import { createClient, groq } from "next-sanity";
 import clientConfig from "./config/client-config";
 import { client } from "./lib/client";
 import { Chapter } from "@/types/chapter";
+import { ImageChapter } from "@/types/imageChapter";
 
 export async function getProjects(): Promise<Project[]> {
   try {
@@ -81,6 +82,55 @@ export async function getChapter(slug: string) {
       order,
       content,
       pdf
+    }`,
+    { slug }
+  );
+
+}
+
+export async function getImageChapters(): Promise<ImageChapter[]> {
+  return client.fetch(
+    groq`*[_type == "imageChapter"] | order(order asc) {
+      _id,
+      title,
+      contributor,
+      "slug": slug.current,
+      order,
+      "pages": pages[]{
+        _key,
+        pageNumber,
+        alt,
+        "url": asset->url
+      },
+      "pdf": pdf{
+  asset->{
+    url
+  }
+}
+    }`
+  );
+}
+export async function getImageChapter(
+  slug: string
+): Promise<ImageChapter | null> {
+  return client.fetch(
+    groq`*[_type == "imageChapter" && slug.current == $slug][0] {
+      _id,
+      title,
+      contributor,
+      "slug": slug.current,
+      order,
+      "pages": pages[]{
+        _key,
+        pageNumber,
+        alt,
+        "url": asset->url
+      },
+      "pdf": pdf{
+        asset->{
+          url
+        }
+      }
     }`,
     { slug }
   );
