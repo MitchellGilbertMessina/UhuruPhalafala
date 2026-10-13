@@ -1,0 +1,99 @@
+.landing {
+  position: relative;
+  height: 400vh;               /* scroll length of the whole intro: tune this */
+  background: #c0bcc6;
+}
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+
+/* Background: fades out at the very end (p 0.8 → 1) */
+.bg,
+.bg img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.bg img { object-fit: cover; }
+.bg {
+  opacity: clamp(0, calc((1 - var(--p)) / 0.2), 1);
+}
+
+/* Names: visible at the start, gone by p 0.3, drifting up slightly */
+.names {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: clamp(0, calc((0.3 - var(--p)) / 0.25), 1);
+  transform: translateY(calc(var(--p) * -48px));
+}
+.names img {
+  width: auto;
+  height: auto;
+  max-width: min(86vw, 823px);   /* never wider than its native size */
+  max-height: 80vh;
+  max-height: 80svh;             /* fits the screen, leaving room above and below */
+}
+
+/* Blurb + links: in at p 0.25–0.45, out at p 0.7–0.85 */
+.about {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 6rem 1.5rem 3rem;
+  background: rgb(20 15 25 / 0.45);   /* scrim: tune to the artwork */
+  color: #fff;
+  opacity: min(
+    clamp(0, calc((var(--p) - 0.25) / 0.2), 1),
+    clamp(0, calc((0.85 - var(--p)) / 0.15), 1)
+  );
+}
+
+.aboutInner {
+  max-width: 38rem;
+  font-size: clamp(1rem, 0.6rem + 1vw, 1.25rem);
+  line-height: 1.65;
+}
+.aboutInner p + p { margin-top: 1.25rem; }
+.epigraph { font-style: italic; }
+
+.links {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding: 0;
+  list-style: none;
+}
+.links a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+/*MOBILE*/
+@media (max-width: 700px) {
+  .about {
+    padding: 5rem 1.25rem 2rem;
+  }
+
+  .aboutInner {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .aboutInner p + p {
+    margin-top: 0.9rem;
+  }
+
+  .links {
+    margin-top: 1.25rem;
+  }
+}

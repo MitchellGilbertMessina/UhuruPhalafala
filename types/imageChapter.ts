@@ -1,3 +1,19 @@
+export type AudioMedia = {
+  _key: string;
+  _type: "audio";
+  title?: string;
+  audioUrl?: string;
+  transcript?: string;
+};
+
+export type VideoMedia = {
+  _key: string;
+  _type: "video";
+  title?: string;
+  url?: string;
+};
+
+export type ChapterMedia = AudioMedia | VideoMedia;
 
 export type ImageChapterPage = {
   _key: string;

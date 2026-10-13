@@ -1,44 +1,39 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { getChapters } from "@/sanity/sanity-utils";
+import ImagePublicationReader from "@/components/publication/ImagePublicationReader";
+import { getImageChapters } from "@/sanity/sanity-utils";
 
 export const metadata: Metadata = {
   title: "Sensuous Heirlooms",
-  description: "Sensuous Heirlooms by Uhuru Phalafala.",
+  description: "Sensuous Heirlooms Edited by Uhuru Portia Phalafala",
   alternates: {
     canonical: "https://sensuousheirlooms.com/",
   },
   openGraph: {
     title: "Sensuous Heirlooms",
-    description: "Sensuous Heirlooms by Uhuru Phalafala.",
+    description: "Sensuous Heirlooms Edited by Uhuru Portia Phalafala",
     url: "https://sensuousheirlooms.com/",
     siteName: "Sensuous Heirlooms",
     type: "website",
   },
 };
 
-export default async function HeirloomsPage() {
-  const chapters = await getChapters();
+export default async function HeirloomsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const [chapters, query] = await Promise.all([
+    getImageChapters(),
+    searchParams,
+  ]);
+
+  const initialView = query.view === "spread" ? "spread" : "scroll";
 
   return (
-    <main>
-      <h1>Sensuous Heirlooms</h1>
-
-      <nav>
-        {chapters.map((chapter) => (
-          <Link
-            key={chapter._id}
-            href={`/sensuousheirlooms/${chapter.slug}`}
-          >
-            <div>
-              {chapter.contributor}
-            </div>
-            <div>
-              {chapter.title}
-            </div>
-          </Link>
-        ))}
-      </nav>
-    </main>
+    <ImagePublicationReader
+      chapters={chapters}
+      initialSlug={null}
+      initialView={initialView}
+    />
   );
 }

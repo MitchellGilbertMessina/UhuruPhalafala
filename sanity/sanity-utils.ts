@@ -106,7 +106,15 @@ export async function getImageChapters(): Promise<ImageChapter[]> {
         asset-> {
           url
         }
-      }
+      },
+        "media": media[]{
+  _key,
+  _type,
+  title,
+  transcript,
+  url,
+  "audioUrl": file.asset->url
+},
     }`
   );
 }

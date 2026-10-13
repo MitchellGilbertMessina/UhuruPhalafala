@@ -1,5 +1,5 @@
 
-import { defineField, defineType } from "sanity";
+import { defineArrayMember, defineField, defineType } from "sanity";
 
 export const imageChapter = defineType({
   name: "imageChapter",
@@ -73,6 +73,38 @@ export const imageChapter = defineType({
       options: {
         accept: ".pdf",
       },
+    }),
+
+    defineField({
+      name: "media",
+      title: "Digital media",
+      description: "Optional audio or video that goes with this chapter.",
+      type: "array",
+      of: [
+        defineArrayMember({
+          type: "object",
+          name: "audio",
+          title: "Audio",
+          fields: [
+            defineField({ name: "title", type: "string" }),
+            defineField({ name: "file", type: "file", options: { accept: "audio/*" } }),
+            defineField({ name: "transcript", type: "text" }),
+          ],
+        }),
+        defineArrayMember({
+          type: "object",
+          name: "video",
+          title: "Video",
+          fields: [
+            defineField({ name: "title", type: "string" }),
+            defineField({
+              name: "url",
+              type: "url",
+              description: "YouTube or Vimeo link (an unlisted link is fine)",
+            }),
+          ],
+        }),
+      ],
     }),
   ],
 });
