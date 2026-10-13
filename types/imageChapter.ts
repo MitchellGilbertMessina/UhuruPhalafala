@@ -17,5 +17,5 @@ export type ImageChapter = {
     asset?: {
       url: string;
     };
-  };
+  } | null;
 };

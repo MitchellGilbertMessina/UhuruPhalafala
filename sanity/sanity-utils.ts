@@ -102,11 +102,11 @@ export async function getImageChapters(): Promise<ImageChapter[]> {
         alt,
         "url": asset->url
       },
-      "pdf": pdf{
-  asset->{
-    url
-  }
-}
+      "pdf": pdf {
+        asset-> {
+          url
+        }
+      }
     }`
   );
 }

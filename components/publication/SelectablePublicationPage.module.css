@@ -1,0 +1,62 @@
+.pageFrame {
+  position: relative;
+  width: 100%;
+  line-height: 0;
+  isolation: isolate;
+}
+
+.pageFrame > img {
+position: relative;
+  z-index: 1;                    /* image sits above the text layer */
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;          /* clicks fall through to the text beneath */
+}
+
+.textLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-align: initial;
+  transform-origin: 0 0;
+  user-select: text;
+  -webkit-user-select: text;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.textLayer :global(span),
+.textLayer :global(br) {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  cursor: text;
+}
+
+.textLayer :global(span)::selection,
+.textLayer :global(br)::selection {
+  background: rgb(255 162 93 / 100%);
+}
+/* This shows alignment of PDF text*/
+/*
+.textLayer :global(span) {
+  outline: 1px solid rgb(255 0 0 / 50%);
+  color: red !important;
+  -webkit-text-fill-color: red !important;
+}*/ 
+
+.textLayer :global(span[role="presentation"]) {
+  font-size: calc(var(--scale-factor) * var(--font-height)) !important;
+  transform: rotate(var(--rotate, 0deg)) scaleX(var(--scale-x, 1)) !important;
+}
+
+.pageFrame > img {
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}

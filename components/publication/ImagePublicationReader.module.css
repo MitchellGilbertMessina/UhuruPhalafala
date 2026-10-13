@@ -1,4 +1,4 @@
- 
+
 .reader {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -104,7 +104,7 @@
 
 .scrollPage {
   width: 76%;
-  margin: 0 auto 3rem;
+  margin: 0 auto;
 }
 
 .scrollPage img {
@@ -112,16 +112,16 @@
   width: 100%;
   height: auto;
 }
-
+/*
 .leftPage {
   margin-left: 0;
-}
+}*/
 
 .rightPage {
   margin-right: 0;
 }
 
-/* Spread/carousel mode */
+/* Spread mode */
 .spreadViewer {
   max-width: 1500px;
   margin: 0 auto;
@@ -203,11 +203,9 @@
     margin-bottom: 1.5rem;
   }
 
-  .leftPage {
-    margin-left: 0;
-  }
-
+  .leftPage,
   .rightPage {
+   /* margin-left: 0;*/
     margin-right: 0;
   }
 

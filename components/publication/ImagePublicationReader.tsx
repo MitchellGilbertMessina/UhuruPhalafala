@@ -5,13 +5,16 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { ImageChapter } from "@/types/imageChapter";
+import SelectablePublicationPage from "@/components/publication/SelectablePublicationPage";
 import styles from "./ImagePublicationReader.module.css";
+import type { ClipboardEvent } from "react";
 
 type ReaderPage = {
   key: string;
   url: string;
   alt: string;
   pageNumber: number | null;
+  pdfUrl: string | null;
   chapterSlug: string;
   chapterTitle: string;
   contributor: string;
@@ -39,8 +42,11 @@ export default function ImagePublicationReader({
       (chapter.pages ?? []).map((page, pageIndex) => ({
         key: `${chapter._id}-${page._key}`,
         url: page.url,
-        alt: page.alt || `${chapter.title}, page ${page.pageNumber ?? pageIndex + 1}`,
+        alt:
+          page.alt ||
+          `${chapter.title}, page ${page.pageNumber ?? pageIndex + 1}`,
         pageNumber: page.pageNumber ?? null,
+        pdfUrl: chapter.pdf?.asset?.url ?? null,
         chapterSlug: chapter.slug,
         chapterTitle: chapter.title,
         contributor: chapter.contributor,
@@ -82,23 +88,24 @@ export default function ImagePublicationReader({
     return `${start}–${end} / 244`;
   };
 
-  // Keep the URL and browser history in sync with the active chapter.
+  // Keep the URL in sync with the chapter currently being read.
   useEffect(() => {
     const slug = activePage?.chapterSlug;
     if (!slug) return;
 
     const url = new URL(window.location.href);
+    const expectedPath = `/sensuousheirlooms/${slug}`;
 
-    if (url.pathname !== `/sensuousheirlooms-test/${slug}`) {
+    if (url.pathname !== expectedPath) {
       window.history.replaceState(
         window.history.state,
         "",
-        `/sensuousheirlooms-test/${slug}${url.search}`
+        `${expectedPath}${url.search}`
       );
     }
   }, [activePage]);
 
-  // In scroll mode, identify the page nearest the top of the viewport.
+  // Identify the page nearest the top of the viewport in scroll mode.
   useEffect(() => {
     if (view !== "scroll") return;
 
@@ -131,7 +138,7 @@ export default function ImagePublicationReader({
     return () => observer.disconnect();
   }, [view, pages]);
 
-  // Start spread mode at the first page of the selected chapter.
+  // Begin spread mode at the selected chapter.
   useEffect(() => {
     if (view !== "spread") return;
 
@@ -142,7 +149,7 @@ export default function ImagePublicationReader({
     if (index >= 0) setSpreadStart(index);
   }, [view, initialSlug, pages]);
 
-  // Update the active page when the spread changes.
+  // Update the active chapter when the spread changes.
   useEffect(() => {
     if (view !== "spread") return;
 
@@ -203,7 +210,7 @@ export default function ImagePublicationReader({
         </div>
       </aside>
 
-      <section className={styles.readingArea}>
+      <section className={styles.readingArea} onCopy={handleCopy}>
         <header className={styles.chapterHeader}>
           <h1>{activeChapter.title}</h1>
           <p>{activeChapter.contributor}</p>
@@ -223,21 +230,27 @@ export default function ImagePublicationReader({
           <div className={styles.scrollPages}>
             {pages.map((page, index) => (
               <figure
-                className={`${styles.scrollPage} ${
-                  index % 2 === 0 ? styles.leftPage : styles.rightPage
-                }`}
+                id={page.pageIndex === 0 ? `chapter-${page.chapterSlug}` : undefined}
+                className={`${styles.scrollPage} ${index % 2 === 0 ? styles.leftPage : styles.rightPage
+                  }`}
                 key={page.key}
                 data-reader-page={page.key}
               >
-                <Image
-                  src={page.url}
-                  alt={page.alt}
-                  width={1200}
-                  height={1700}
-                  unoptimized
-                  priority={index < 2}
-                  sizes="(max-width: 700px) 96vw, 70vw"
-                />
+                <SelectablePublicationPage
+                  pdfUrl={page.pdfUrl}
+                  pdfPageIndex={page.pageIndex}
+                >
+                  <Image
+                    src={page.url}
+                    alt={page.alt}
+                    width={1772}
+                    height={2421}
+                    unoptimized
+                    draggable={false}
+                    priority={index < 2}
+                    sizes="(max-width: 700px) 96vw, 70vw"
+                  />
+                </SelectablePublicationPage>
               </figure>
             ))}
           </div>
@@ -246,20 +259,29 @@ export default function ImagePublicationReader({
             <div className={styles.spread}>
               {spreadPages.map((page) => (
                 <figure className={styles.spreadPage} key={page.key}>
-                  <Image
-                    src={page.url}
-                    alt={page.alt}
-                    width={1200}
-                    height={1700}
-                    unoptimized
-                    priority
-                    sizes="(max-width: 700px) 48vw, 45vw"
-                  />
+                  <SelectablePublicationPage
+                    pdfUrl={page.pdfUrl}
+                    pdfPageIndex={page.pageIndex}
+                  >
+                    <Image
+                      src={page.url}
+                      alt={page.alt}
+                      width={1700}
+                      height={2421}
+                      unoptimized
+                      priority
+                      draggable={false}
+                      sizes="(max-width: 700px) 48vw, 45vw"
+                    />
+                  </SelectablePublicationPage>
                 </figure>
               ))}
             </div>
 
-            <nav className={styles.spreadControls} aria-label="Page navigation">
+            <nav
+              className={styles.spreadControls}
+              aria-label="Page navigation"
+            >
               <button
                 onClick={() => moveSpread(-1)}
                 disabled={spreadStart === 0}
@@ -285,6 +307,21 @@ export default function ImagePublicationReader({
   );
 }
 
+const handleCopy = (event: ClipboardEvent<HTMLElement>) => {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+
+  const text = selection
+    .toString()
+    .replace(/\r/g, "")
+    .replace(/[\uFFFC\uFFFD\u00AD]/g, "") // object/replacement chars, soft hyphens
+    .replace(/\n{2,}/g, "\n")             // collapse the doubled line breaks
+    .trim();
+
+  event.clipboardData.setData("text/plain", text);
+  event.preventDefault();
+};
+
 function ChapterLinks({
   chapters,
   activeSlug,
@@ -297,7 +334,7 @@ function ChapterLinks({
       {chapters.map((chapter) => (
         <Link
           key={chapter._id}
-          href={`/sensuousheirlooms-test/${chapter.slug}`}
+          href={`/sensuousheirlooms/${chapter.slug}`}
           aria-current={chapter.slug === activeSlug ? "page" : undefined}
         >
           {chapter.contributor}
