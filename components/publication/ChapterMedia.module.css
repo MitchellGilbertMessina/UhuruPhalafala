@@ -1,0 +1,118 @@
+.media {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  width: 76%;
+  margin: 0 auto 3rem;
+}
+
+.item {
+  margin: 0;
+}
+
+.itemTitle {
+  margin-bottom: 0.6rem;
+  font-size: 0.95rem;
+}
+
+.audio {
+  display: block;
+  width: 100%;
+}
+
+.link {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+/* Video: responsive 16:9 */
+.video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Transcript */
+.transcript {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.transcript summary {
+  cursor: pointer;
+}
+
+.transcript p {
+  max-width: 38rem;
+  margin-top: 0.75rem;
+}
+
+/* Slideshow */
+.stage {
+  position: relative;
+  width: 100%;
+  background: rgb(0 0 0 / 6%);
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.slideActive {
+  opacity: 1;
+}
+
+.caption {
+  min-height: 1.5em;
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.slideNav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+}
+
+.navButton {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  padding: 0.3rem 0.7rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.navButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .media {
+    width: 96%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide {
+    transition: none;
+  }
+}

@@ -1,5 +1,4 @@
 import Header from "@/components/layout/Header";
-import ObjectCard from "@/components/objects/ObjectCard";
 import ObjectCanvas from "@/components/objects/ObjectCanvas";
 import { mockObjects } from "@/lib/mockObjects";
 

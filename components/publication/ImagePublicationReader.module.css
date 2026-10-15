@@ -1,171 +1,25 @@
+.shell {
+  --p: 0;
+  --logo-space: 8rem;      /* logo height + about 2.5rem */
+  --accent: #5b21d6;       /* clickable contributions: change me */
+}
+
 .reader {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   min-height: 100vh;
-  background: #c0bcc6;
-  /*background: #EFE6D0;*/
+  background: #c5c0c9;
   color: #171517;
 }
 
-.sidebar {
-  position: sticky;
-  top: 0;
-  align-self: start;
-  height: 100vh;
-  overflow-y: auto;
-  padding: 1rem;
-  font-size: 0.9rem;
-}
-
-.sidebar a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.sidebar a:hover {
-  text-decoration: underline;
-}
-
-.viewToggle {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
-}
-
-.viewToggle button,
-.spreadControls button {
-  border: 1px solid currentColor;
-  background: transparent;
-  color: inherit;
-  padding: 0.35rem 0.65rem;
-  cursor: pointer;
-}
-
-.viewToggle button[aria-pressed="true"] {
-  background: #171517;
-  color: #EFE6D0;
-}
-
-.desktopMenu {
-  margin-top: 3rem;
-}
-
-.desktopMenu>p {
-  margin-bottom: 1rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-}
-
-.chapterList a {
-  display: block;
-  transition: padding-left 0.2s ease;
-}
-
-.chapterList a[aria-current="page"] {
-  padding-left: 1rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.mobileMenu {
-  display: none;
-}
-
-.readingArea {
-  min-width: 0;
-  padding: 2rem;
-}
-
-.chapterHeader {
-  max-width: 900px;
-  margin: 0 auto 2rem;
-}
-
-.chapterHeader h1 {
-  font-size: clamp(1.5rem, 3vw, 3rem);
-  line-height: 1.05;
-}
-
-.chapterHeader p {
-  margin-top: 0.5rem;
-}
-
-.chapterHeader>a {
-  display: inline-block;
-  margin-top: 1rem;
-  color: inherit;
-}
-
-.scrollPages {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.scrollPage {
-  width: 76%;
-  margin: 0 auto;
-  scroll-margin-top: 1rem;
-}
-
-.scrollPage img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-/*
-.leftPage {
-  margin-left: 0;
-}*/
-
-.rightPage {
-  margin-right: 0;
-}
-
-/* Spread mode */
-.spreadViewer {
-  max-width: 1500px;
-  margin: 0 auto;
-}
-
-.spread {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
-  gap: 0;
-}
-
-.spreadPage {
-  min-width: 0;
-  margin: 0;
-}
-
-.spreadPage img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.spreadControls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  padding: 1.5rem 0;
-}
-
-.spreadControls button:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
+/* ---------- Logo ---------- */
 .logo {
   position: fixed;
   top: 1rem;
   left: 1rem;
   z-index: 50;
   display: block;
-  width: 9rem;                   /* tune */
+  width: 9rem;
   line-height: 0;
   transition: opacity 0.3s ease;
 }
@@ -188,24 +42,176 @@
   opacity: clamp(0, calc((0.95 - var(--p)) / 0.1), 1);
 }
 
+/* ---------- Sidebar ---------- */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  width: 220px;
+  height: 100vh;
+  overflow-y: auto;
+  padding: var(--logo-space) 1rem 1rem;
+  font-size: 0.9rem;
+  opacity: clamp(0, calc((var(--p) - 0.8) / 0.2), 1);
+}
+
+.sidebar > * {
+  flex-shrink: 0;
+}
+
+.sidebar a {
+  color: inherit;
+  text-decoration: none;
+}
+
 .mobileHome {
   display: none;
 }
 
-.shell {
-  --p: 0;
-  --logo-space: 6rem;   /* logo height + about 2.5rem */
+.mobileMenu {
+  display: none;
 }
 
-.sidebar {
-  /* replace the old padding line with: */
-  padding: var(--logo-space) 1rem 1rem;
+.desktopMenu > p {
+  margin-bottom: 1rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
 }
 
-/* Mobile */
-/* Mobile */
-/* Mobile */
+/* Contents list */
+.contents {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
+.contentsLink,
+.contentsClosed {
+  display: block;
+  line-height: 1.3;
+}
+
+.contentsAuthor {
+  display: block;
+}
+
+.contentsTitle {
+  display: block;
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+
+.contentsClosed {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sidebar .contentsLink {
+  color: var(--accent);
+  transition: padding-left 0.2s ease;
+}
+
+.sidebar .contentsLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sidebar .contentsLink[aria-current="page"] {
+  padding-left: 1rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- Reading area ---------- */
+.readingArea {
+  grid-column: 2;
+  min-width: 0;
+  padding: 2rem;
+}
+
+.contribution {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding-top: 3rem;
+}
+
+.contributionHeader {
+  width: 76%;
+  margin: 0 auto 2rem;
+}
+
+.contributionAuthor {
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.contributionTitle {
+  margin-top: 0.4rem;
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.downloadLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  color: inherit;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.downloadLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.intro {
+  width: 76%;
+  margin: 0 auto 2rem;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.intro p {
+  max-width: 38rem;
+}
+
+.intro p + p {
+  margin-top: 1rem;
+}
+
+.page {
+  width: 76%;
+  margin: 0 auto;
+}
+
+.page img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.divider {
+  width: 76%;
+  height: 1px;
+  margin: 4rem auto 0;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.endSpacer {
+  height: 50vh;
+}
+
+/* ---------- Phones ---------- */
 @media (max-width: 700px) {
   .reader {
     display: block;
@@ -215,7 +221,7 @@
     position: sticky;
     top: 0;
     z-index: 20;
-    display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 1rem;
@@ -232,9 +238,8 @@
     display: inline;
   }
 
-  .viewToggle,
   .desktopMenu {
-    display: none;               /* scroll only on phones */
+    display: none;
   }
 
   .mobileMenu {
@@ -247,7 +252,7 @@
     cursor: pointer;
   }
 
-  .mobileMenu .chapterList {
+  .mobileMenu .contentsNav {
     position: absolute;
     top: calc(100% + 0.6rem);
     right: 0;
@@ -255,7 +260,6 @@
     width: 16rem;
     max-height: 70vh;
     overflow-y: auto;
-    margin: 0;
     padding: 1rem;
     background: #c5c0c9;
     border: 1px solid rgb(0 0 0 / 15%);
@@ -265,28 +269,16 @@
     padding: 1rem 0.5rem;
   }
 
-  .chapterHeader {
-    padding-inline: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .scrollPage {
-    width: 96%;
-    margin-bottom: 1.5rem;
+  .contribution {
+    padding-top: 2rem;
     scroll-margin-top: 3.5rem;   /* clears the sticky bar when jumping */
   }
 
-  .leftPage,
-  .rightPage {
-    margin-right: 0;
-  }
-
-  .spread {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .spreadControls {
-    gap: 1.5rem;
+  .contributionHeader,
+  .intro,
+  .page,
+  .divider {
+    width: 96%;
   }
 
   .logo {

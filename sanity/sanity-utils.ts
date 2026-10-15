@@ -96,28 +96,40 @@ export async function getImageChapters(): Promise<ImageChapter[]> {
       contributor,
       "slug": slug.current,
       order,
-      "pages": pages[]{
+      "open": coalesce(open, false),
+      "intro": select(open == true => intro),
+      "pages": select(open == true => pages[]{
         _key,
         pageNumber,
         alt,
         "url": asset->url
-      },
-      "pdf": pdf {
+      }),
+      "pdf": select(open == true => pdf {
         asset-> {
           url
         }
-      },
-        "media": media[]{
-  _key,
-  _type,
-  title,
-  transcript,
-  url,
-  "audioUrl": file.asset->url
-},
+      }),
+      "media": select(open == true => media[]{
+        _key,
+        _type,
+        title,
+        transcript,
+        url,
+        "audioUrl": file.asset->url,
+        "slides": slides[]{
+          _key,
+          startTime,
+          alt,
+          caption,
+          "url": image.asset->url,
+          "width": image.asset->metadata.dimensions.width,
+          "height": image.asset->metadata.dimensions.height
+        }
+      })
     }`
   );
 }
+
 export async function getImageChapter(
   slug: string
 ): Promise<ImageChapter | null> {

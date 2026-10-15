@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import ImagePublicationReader from "@/components/publication/ImagePublicationReader";
 import { getImageChapters } from "@/sanity/sanity-utils";
-
+import ImagePublicationReader from "@/components/publication/ImagePublicationReader";
+export const revalidate = 60;
 export const metadata: Metadata = {
   title: "Sensuous Heirlooms",
   description: "Sensuous Heirlooms Edited by Uhuru Portia Phalafala",
@@ -17,23 +17,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function HeirloomsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ view?: string }>;
-}) {
-  const [chapters, query] = await Promise.all([
-    getImageChapters(),
-    searchParams,
-  ]);
+export default async function HeirloomsPage() {
+  const chapters = await getImageChapters();
 
-  const initialView = query.view === "spread" ? "spread" : "scroll";
-
-  return (
-    <ImagePublicationReader
-      chapters={chapters}
-      initialSlug={null}
-      initialView={initialView}
-    />
-  );
+  return <ImagePublicationReader chapters={chapters} initialSlug={null} />;
 }

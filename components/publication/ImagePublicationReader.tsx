@@ -3,138 +3,71 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import type { ImageChapter } from "@/types/imageChapter";
-import SelectablePublicationPage from "@/components/publication/SelectablePublicationPage";
-import styles from "./ImagePublicationReader.module.css";
 import type { ClipboardEvent, CSSProperties, MouseEvent } from "react";
+import type { ImageChapter } from "@/types/imageChapter";
+import { isOpenChapter } from "@/types/imageChapter";
+import SelectablePublicationPage from "@/components/publication/SelectablePublicationPage";
 import PublicationLanding from "@/components/publication/PublicationLanding";
-
-type ReaderPage = {
-  key: string;
-  url: string;
-  alt: string;
-  pageNumber: number | null;
-  pdfUrl: string | null;
-  chapterSlug: string;
-  chapterTitle: string;
-  contributor: string;
-  chapterIndex: number;
-  pageIndex: number;
-};
+import ChapterMedia from "@/components/publication/ChapterMedia";
+import styles from "./ImagePublicationReader.module.css";
 
 type Props = {
   chapters: ImageChapter[];
   initialSlug: string | null;
-  initialView: "scroll" | "spread";
 };
 
 const LANDING_KEY = "landing";
 
+const withDownload = (url: string, filename: string) =>
+  `${url}${url.includes("?") ? "&" : "?"}dl=${encodeURIComponent(filename)}`;
+
 export default function ImagePublicationReader({
   chapters,
   initialSlug,
-  initialView,
 }: Props) {
-  const startsPastLanding = initialSlug !== null || initialView === "spread";
+  const startsPastLanding = initialSlug !== null;
 
-  const [view, setView] = useState<"scroll" | "spread">(initialView);
-  const [spreadStart, setSpreadStart] = useState(0);
-  const [activePageKey, setActivePageKey] = useState<string | null>(
-    initialSlug ? null : LANDING_KEY
-  );
+  const [activeKey, setActiveKey] = useState<string>(initialSlug ?? LANDING_KEY);
   const [aboutActive, setAboutActive] = useState(false);
   const [sidebarActive, setSidebarActive] = useState(startsPastLanding);
   const initialScrollDone = useRef(false);
-  const menuRef = useRef<HTMLDetailsElement>(null);
-  const activeSlugRef = useRef<string | null>(initialSlug);
   const shellRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDetailsElement>(null);
 
-  const pages = useMemo<ReaderPage[]>(() => {
-    return chapters.flatMap((chapter, chapterIndex) =>
-      (chapter.pages ?? []).map((page, pageIndex) => ({
-        key: `${chapter._id}-${page._key}`,
-        url: page.url,
-        alt:
-          page.alt ||
-          `${chapter.title}, page ${page.pageNumber ?? pageIndex + 1}`,
-        pageNumber: page.pageNumber ?? null,
-        pdfUrl: chapter.pdf?.asset?.url ?? null,
-        chapterSlug: chapter.slug,
-        chapterTitle: chapter.title,
-        contributor: chapter.contributor,
-        chapterIndex,
-        pageIndex,
-      }))
+  const openChapters = useMemo(() => chapters.filter(isOpenChapter), [chapters]);
+
+  const onLanding = activeKey === LANDING_KEY;
+  const activeSlug = onLanding ? null : activeKey;
+
+  // Scroll to the requested contribution (or the landing) on first load.
+  useEffect(() => {
+    const target = document.getElementById(
+      initialSlug ? `chapter-${initialSlug}` : "landing"
     );
-  }, [chapters]);
+    target?.scrollIntoView({ block: "start" });
 
-  const initialPageIndex = Math.max(
-    0,
-    pages.findIndex((page) => page.chapterSlug === initialSlug)
-  );
+    const id = requestAnimationFrame(() => {
+      initialScrollDone.current = true;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [initialSlug]);
 
-  const onLanding = view === "scroll" && activePageKey === LANDING_KEY;
-
-  const activePage = onLanding
-    ? undefined
-    : (pages.find((page) => page.key === activePageKey) ??
-      pages[initialPageIndex]);
-
-  const activeChapter =
-    chapters.find((chapter) => chapter.slug === activePage?.chapterSlug) ??
-    chapters[0];
-  activeSlugRef.current = onLanding
-    ? null
-    : (activePage?.chapterSlug ?? initialSlug);
-
-  const spreadPages = pages.slice(spreadStart, spreadStart + 2);
-
-  const formatPageNumber = (page: ReaderPage | undefined) => {
-    if (!page?.pageNumber) return "—";
-    return String(page.pageNumber).padStart(2, "0");
-  };
-
-  const counter = () => {
-    const first = spreadPages[0];
-    const second = spreadPages[1];
-
-    if (!first) return "";
-
-    const start = formatPageNumber(first);
-    const end = second ? formatPageNumber(second) : start;
-
-    return `${start}–${end} / 244`;
-  };
-
-  // Keep the URL in sync with the chapter currently being read.
+  // Keep the URL in sync with the section being read.
   useEffect(() => {
     if (!initialScrollDone.current) return;
 
     const expectedPath = onLanding
       ? "/sensuousheirlooms"
-      : activePage
-        ? `/sensuousheirlooms/${activePage.chapterSlug}`
-        : null;
+      : `/sensuousheirlooms/${activeKey}`;
 
-    if (!expectedPath) return;
-
-    const url = new URL(window.location.href);
-    if (url.pathname !== expectedPath) {
-      window.history.replaceState(
-        window.history.state,
-        "",
-        `${expectedPath}${url.search}`
-      );
+    if (window.location.pathname !== expectedPath) {
+      window.history.replaceState(window.history.state, "", expectedPath);
     }
-  }, [activePage, onLanding]);
+  }, [activeKey, onLanding]);
 
-  // Identify the page nearest the top of the viewport in scroll mode.
+  // Work out which section sits near the top of the viewport.
   useEffect(() => {
-    if (view !== "scroll") return;
-
-    const elements = document.querySelectorAll<HTMLElement>(
-      "[data-reader-page]"
-    );
+    const elements = document.querySelectorAll<HTMLElement>("[data-reader-page]");
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -147,70 +80,20 @@ export default function ImagePublicationReader({
           );
 
         const key = visible[0]?.target.getAttribute("data-reader-page");
-
-        if (key) setActivePageKey(key);
+        if (key) setActiveKey(key);
       },
-      {
-        rootMargin: "-10% 0px -65% 0px",
-        threshold: 0,
-      }
+      { rootMargin: "-10% 0px -65% 0px", threshold: 0 }
     );
 
     elements.forEach((element) => observer.observe(element));
-
     return () => observer.disconnect();
-  }, [view, pages]);
-
-  // Begin spread mode at the selected chapter.
-  useEffect(() => {
-    if (view !== "spread") return;
-
-    const index = pages.findIndex(
-      (page) => page.chapterSlug === initialSlug
-    );
-
-    if (index >= 0) setSpreadStart(index);
-  }, [view, initialSlug, pages]);
-
-  // Update the active chapter when the spread changes.
-  useEffect(() => {
-    if (view !== "spread") return;
-
-    const page = pages[spreadStart];
-    if (page) setActivePageKey(page.key);
-  }, [view, spreadStart, pages]);
-
-  // Scrolls to the chapter on first load, and also when you switch from Spread
-  // to Scroll, where it lands on the chapter you were reading.
-  useEffect(() => {
-    initialScrollDone.current = false;
-
-    if (view === "scroll") {
-      const target = activeSlugRef.current
-        ? document.getElementById(`chapter-${activeSlugRef.current}`)
-        : document.getElementById("landing");
-      target?.scrollIntoView({ block: "start" });
-    }
-
-    const id = requestAnimationFrame(() => {
-      initialScrollDone.current = true;
-    });
-    return () => cancelAnimationFrame(id);
-  }, [view]);
+  }, [chapters]);
 
   // Landing scroll progress: writes --p (0 → 1) onto the shell element.
   useEffect(() => {
     const shell = shellRef.current;
-    if (!shell) return;
-
     const landing = document.getElementById("landing");
-
-    if (view !== "scroll" || !landing) {
-      shell.style.setProperty("--p", "1");
-      setAboutActive(false);
-      setSidebarActive(true);
-      return;
-    }
+    if (!shell || !landing) return;
 
     let frame = 0;
 
@@ -239,53 +122,20 @@ export default function ImagePublicationReader({
       window.removeEventListener("resize", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [view]);
-
-  //No Spread on mobile
-  useEffect(() => {
-    if (window.matchMedia("(max-width: 700px)").matches) setView("scroll");
   }, []);
-
-  const changeView = (nextView: "scroll" | "spread") => {
-    setView(nextView);
-
-    const url = new URL(window.location.href);
-    url.searchParams.set("view", nextView);
-
-    window.history.replaceState(window.history.state, "", url);
-  };
-
-  const moveSpread = (direction: -1 | 1) => {
-    setSpreadStart((current) =>
-      Math.max(0, Math.min(pages.length - 1, current + direction * 2))
-    );
-  };
 
   const jumpToChapter = (slug: string) => {
     if (menuRef.current) menuRef.current.open = false;
-    if (view === "scroll") {
-      document
-        .getElementById(`chapter-${slug}`)
-        ?.scrollIntoView({ block: "start" });
-    } else {
-      const i = pages.findIndex((p) => p.chapterSlug === slug);
-      if (i >= 0) setSpreadStart(i);
-    }
+    document
+      .getElementById(`chapter-${slug}`)
+      ?.scrollIntoView({ block: "start" });
   };
 
-  const withDownload = (url: string, filename: string) =>
-  `${url}${url.includes("?") ? "&" : "?"}dl=${encodeURIComponent(filename)}`;
-
   const goHome = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (view !== "scroll") return; // spread mode: normal navigation
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     e.preventDefault();
     document.getElementById("landing")?.scrollIntoView({ block: "start" });
   };
-
-  if (!chapters.length || !pages.length || !activeChapter) {
-    return <main>No publication pages have been uploaded yet.</main>;
-  }
 
   return (
     <div
@@ -314,143 +164,115 @@ export default function ImagePublicationReader({
         />
       </Link>
 
-
-      {view === "scroll" && <PublicationLanding aboutActive={aboutActive} />}
+      <PublicationLanding aboutActive={aboutActive} />
 
       <main className={styles.reader}>
         <aside className={styles.sidebar} inert={!sidebarActive}>
-          <Link href="/sensuousheirlooms" className={styles.mobileHome} onClick={goHome}>
+          <Link
+            href="/sensuousheirlooms"
+            className={styles.mobileHome}
+            onClick={goHome}
+          >
             ← Sensuous Heirlooms
           </Link>
-          <div className={styles.viewToggle}>
-            <button
-              onClick={() => changeView("scroll")}
-              aria-pressed={view === "scroll"}
-            >
-              Scroll
-            </button>
-
-            <button
-              onClick={() => changeView("spread")}
-              aria-pressed={view === "spread"}
-            >
-              Spreads
-            </button>
-          </div>
 
           <details className={styles.mobileMenu} ref={menuRef}>
             <summary>Contents</summary>
-            <ChapterLinks
+            <ContentsList
               chapters={chapters}
-              activeSlug={onLanding ? null : activeChapter.slug}
+              activeSlug={activeSlug}
               onJump={jumpToChapter}
             />
           </details>
 
           <div className={styles.desktopMenu}>
             <p>CONTENTS</p>
-            <ChapterLinks
+            <ContentsList
               chapters={chapters}
-              activeSlug={onLanding ? null : activeChapter.slug}
+              activeSlug={activeSlug}
               onJump={jumpToChapter}
             />
           </div>
         </aside>
 
         <section className={styles.readingArea} onCopy={handleCopy}>
-          {view === "spread" && (
-            <header className={styles.chapterHeader}>
-              <h1>{activeChapter.title}</h1>
-              <p>{activeChapter.contributor}</p>
+          {openChapters.map((chapter, index) => {
+            const pages = chapter.pages ?? [];
+            const pdfUrl = chapter.pdf?.asset?.url ?? null;
 
-              {activeChapter.pdf?.asset?.url && (
-                <a
-                  href={activeChapter.pdf.asset.url}
-                  target="_blank"
-                  rel="noreferrer"
+            return (
+              <Fragment key={chapter._id}>
+                <article
+                  id={`chapter-${chapter.slug}`}
+                  className={styles.contribution}
+                  data-reader-page={chapter.slug}
                 >
-                  Download chapter PDF ↓
-                </a>
-              )}
-            </header>
-          )}
+                  <header className={styles.contributionHeader}>
+                    <p className={styles.contributionAuthor}>
+                      {chapter.contributor}
+                    </p>
+                    <h2 className={styles.contributionTitle}>{chapter.title}</h2>
 
-          {view === "scroll" ? (
-            <div className={styles.scrollPages}>
-              {pages.map((page, index) => (
-                <figure
-                  id={page.pageIndex === 0 ? `chapter-${page.chapterSlug}` : undefined}
-                  className={`${styles.scrollPage} ${index % 2 === 0 ? styles.leftPage : styles.rightPage
-                    }`}
-                  key={page.key}
-                  data-reader-page={page.key}
-                >
-                  <SelectablePublicationPage
-                    pdfUrl={page.pdfUrl}
-                    pdfPageIndex={page.pageIndex}
-                  >
-                    <Image
-                      src={page.url}
-                      alt={page.alt}
-                      width={1772}
-                      height={2421}
-                      unoptimized
-                      draggable={false}
-                      priority={index < 2}
-                      sizes="(max-width: 700px) 96vw, 70vw"
-                    />
-                  </SelectablePublicationPage>
-                </figure>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.spreadViewer}>
-              <div className={styles.spread}>
-                {spreadPages.map((page) => (
-                  <figure className={styles.spreadPage} key={page.key}>
-                    <SelectablePublicationPage
-                      pdfUrl={page.pdfUrl}
-                      pdfPageIndex={page.pageIndex}
-                    >
-                      <Image
-                        src={page.url}
-                        alt={page.alt}
-                        width={1772}
-                        height={2421}
-                        unoptimized
-                        priority
-                        draggable={false}
-                        sizes="(max-width: 700px) 48vw, 45vw"
-                      />
-                    </SelectablePublicationPage>
-                  </figure>
-                ))}
-              </div>
+                    {pdfUrl && (
+                      <a
+                        className={styles.downloadLink}
+                        href={withDownload(
+                          pdfUrl,
+                          `${chapter.contributor} - Sensuous Heirlooms.pdf`
+                        )}
+                        aria-label={`Download ${chapter.contributor} as a PDF`}
+                      >
+                        <DownloadIcon />
+                        <span>Download PDF</span>
+                      </a>
+                    )}
+                  </header>
 
-              <nav
-                className={styles.spreadControls}
-                aria-label="Page navigation"
-              >
-                <button
-                  onClick={() => moveSpread(-1)}
-                  disabled={spreadStart === 0}
-                  aria-label="Previous spread"
-                >
-                  ←
-                </button>
+                  {chapter.intro && (
+                    <div className={styles.intro}>
+                      {chapter.intro.split(/\n{2,}/).map((paragraph, i) => (
+                        <p key={i}>{paragraph}</p>
+                      ))}
+                    </div>
+                  )}
 
-                <span>{counter()}</span>
+                  <ChapterMedia media={chapter.media ?? []} />
 
-                <button
-                  onClick={() => moveSpread(1)}
-                  disabled={spreadStart + 2 >= pages.length}
-                  aria-label="Next spread"
-                >
-                  →
-                </button>
-              </nav>
-            </div>
-          )}
+                  {pages.length > 0 && (
+                    <div className={styles.pages}>
+                      {pages.map((page, pageIndex) => (
+                        <figure className={styles.page} key={page._key}>
+                          <SelectablePublicationPage
+                            pdfUrl={pdfUrl}
+                            pdfPageIndex={pageIndex}
+                          >
+                            <Image
+                              src={page.url}
+                              alt={
+                                page.alt ||
+                                `${chapter.title}, page ${page.pageNumber ?? pageIndex + 1}`
+                              }
+                              width={1772}
+                              height={2421}
+                              unoptimized
+                              draggable={false}
+                              sizes="(max-width: 700px) 96vw, 70vw"
+                            />
+                          </SelectablePublicationPage>
+                        </figure>
+                      ))}
+                    </div>
+                  )}
+
+                  {index < openChapters.length - 1 && (
+                    <div className={styles.divider} role="separator" />
+                  )}
+                </article>
+              </Fragment>
+            );
+          })}
+
+          <div className={styles.endSpacer} />
         </section>
       </main>
     </div>
@@ -465,14 +287,32 @@ const handleCopy = (event: ClipboardEvent<HTMLElement>) => {
     .toString()
     .replace(/\r/g, "")
     .replace(/[\uFFFC\uFFFD\u00AD]/g, "") // object/replacement chars, soft hyphens
-    .replace(/\n{2,}/g, "\n")             // collapse the doubled line breaks
+    .replace(/\n{2,}/g, "\n") // collapse the doubled line breaks
     .trim();
 
   event.clipboardData.setData("text/plain", text);
   event.preventDefault();
 };
 
-function ChapterLinks({
+function DownloadIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M8 2v8M4.5 7 8 10.5 11.5 7M3 13.5h10" />
+    </svg>
+  );
+}
+
+function ContentsList({
   chapters,
   activeSlug,
   onJump,
@@ -482,23 +322,39 @@ function ChapterLinks({
   onJump: (slug: string) => void;
 }) {
   return (
-    <nav className={styles.chapterList}>
-      {chapters.map((chapter) => (
-        <Link
-          key={chapter._id}
-          href={`/sensuousheirlooms/${chapter.slug}`}
-          aria-current={chapter.slug === activeSlug ? "page" : undefined}
-          onClick={(e) => {
-            // let cmd/ctrl/middle-click open a new tab as normal
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-            e.preventDefault();
-            onJump(chapter.slug);
-          }}
-        >
-          {chapter.contributor}
-        </Link>
-      ))}
+    <nav className={styles.contentsNav} aria-label="Contents">
+      <ul className={styles.contents}>
+        {chapters.map((chapter) => {
+          const label = (
+            <>
+              <span className={styles.contentsAuthor}>{chapter.contributor}</span>
+              <span className={styles.contentsTitle}>{chapter.title}</span>
+            </>
+          );
+
+          return (
+            <li key={chapter._id}>
+              {isOpenChapter(chapter) ? (
+                <Link
+                  href={`/sensuousheirlooms/${chapter.slug}`}
+                  className={styles.contentsLink}
+                  aria-current={chapter.slug === activeSlug ? "page" : undefined}
+                  onClick={(e) => {
+                    // let cmd/ctrl/middle-click open a new tab as normal
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                    e.preventDefault();
+                    onJump(chapter.slug);
+                  }}
+                >
+                  {label}
+                </Link>
+              ) : (
+                <span className={styles.contentsClosed}>{label}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </nav>
   );
 }
-

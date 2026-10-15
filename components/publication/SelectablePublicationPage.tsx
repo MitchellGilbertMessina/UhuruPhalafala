@@ -14,12 +14,16 @@ import "pdfjs-dist/web/pdf_viewer.css";
 
 // Safari: ReadableStream is not async-iterable in older versions, which
 // PDF.js relies on in getTextContent().
-if (
-    typeof ReadableStream !== "undefined" &&
-    !(ReadableStream.prototype as any)[Symbol.asyncIterator]
-) {
-    (ReadableStream.prototype as any)[Symbol.asyncIterator] =
-        async function* (this: ReadableStream) {
+if (typeof ReadableStream !== "undefined") {
+    const streamProto = ReadableStream.prototype as unknown as Record<
+        symbol,
+        unknown
+    >;
+
+    if (!streamProto[Symbol.asyncIterator]) {
+        streamProto[Symbol.asyncIterator] = async function* (
+            this: ReadableStream
+        ) {
             const reader = this.getReader();
             try {
                 while (true) {
@@ -31,6 +35,7 @@ if (
                 reader.releaseLock();
             }
         };
+    }
 }
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -103,7 +108,6 @@ export default function SelectablePublicationPage({
 
         let cancelled = false;
         let renderVersion = 0;
-        let resizeObserver: ResizeObserver | undefined;
         let textLayer:
             | InstanceType<typeof pdfjsLib.TextLayer>
             | undefined;
@@ -142,6 +146,7 @@ export default function SelectablePublicationPage({
 
                 const pageHeight = baseViewport.height; // PDF units, origin bottom-left
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const items = textContent.items.filter((item: any) => {
                     if (!("str" in item)) return true; // keep structural items
 
@@ -179,7 +184,7 @@ export default function SelectablePublicationPage({
 
         void renderTextLayer();
 
-        resizeObserver = new ResizeObserver(() => {
+        const resizeObserver = new ResizeObserver(() => {
             void renderTextLayer();
         });
 
@@ -188,7 +193,7 @@ export default function SelectablePublicationPage({
         return () => {
             cancelled = true;
             renderVersion++;
-            resizeObserver?.disconnect();
+            resizeObserver.disconnect();
             textLayer?.cancel();
             layer.replaceChildren();
         };

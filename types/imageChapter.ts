@@ -1,3 +1,10 @@
+export type ImageChapterPage = {
+  _key: string;
+  pageNumber?: number;
+  alt?: string;
+  url: string;
+};
+
 export type AudioMedia = {
   _key: string;
   _type: "audio";
@@ -13,14 +20,24 @@ export type VideoMedia = {
   url?: string;
 };
 
-export type ChapterMedia = AudioMedia | VideoMedia;
-
-export type ImageChapterPage = {
+export type SlideshowMedia = {
   _key: string;
-  pageNumber?: number;
-  alt?: string;
-  url: string;
+  _type: "slideshow";
+  title?: string;
+  audioUrl?: string;
+  transcript?: string;
+  slides?: {
+    _key: string;
+    startTime: string;
+    alt?: string;
+    caption?: string;
+    url?: string;
+    width?: number;
+    height?: number;
+  }[] | null;
 };
+
+export type ChapterMedia = AudioMedia | VideoMedia | SlideshowMedia;
 
 export type ImageChapter = {
   _id: string;
@@ -28,10 +45,20 @@ export type ImageChapter = {
   contributor: string;
   slug: string;
   order?: number;
-  pages: ImageChapterPage[];
+  intro?: string | null;
+  pages?: ImageChapterPage[] | null;
   pdf?: {
     asset?: {
       url: string;
     };
   } | null;
+  media?: ChapterMedia[] | null;
+  open?: boolean;
 };
+
+export function isOpenChapter(chapter: ImageChapter): boolean {
+  return (
+    chapter.open === true &&
+    ((chapter.pages?.length ?? 0) > 0 || (chapter.media?.length ?? 0) > 0)
+  );
+}
