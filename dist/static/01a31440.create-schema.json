@@ -1,0 +1,696 @@
+[
+  {
+    "fields": [
+      {
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "name": "author",
+        "type": "string"
+      },
+      {
+        "options": {
+          "source": "title"
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "custom"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "slug",
+        "type": "slug"
+      },
+      {
+        "name": "frontcover",
+        "type": "image",
+        "title": "Front Cover"
+      },
+      {
+        "options": {
+          "source": "title"
+        },
+        "name": "alt",
+        "type": "string",
+        "title": "Alt Text"
+      },
+      {
+        "of": [
+          {
+            "marks": {
+              "annotations": [
+                {
+                  "i18nTitleKey": "inputs.portable-text.annotation.link",
+                  "options": {
+                    "modal": {
+                      "type": "popover"
+                    }
+                  },
+                  "fields": [
+                    {
+                      "validation": [
+                        {
+                          "rules": [
+                            {
+                              "flag": "uri",
+                              "constraint": {
+                                "options": {
+                                  "scheme": [
+                                    "/^http$/",
+                                    "/^https$/",
+                                    "/^tel$/",
+                                    "/^mailto$/"
+                                  ],
+                                  "allowRelative": true,
+                                  "relativeOnly": false,
+                                  "allowCredentials": false
+                                }
+                              }
+                            }
+                          ],
+                          "level": "error"
+                        }
+                      ],
+                      "description": "A valid web, email, phone, or relative link.",
+                      "name": "href",
+                      "type": "url",
+                      "title": "Link"
+                    }
+                  ],
+                  "name": "link",
+                  "type": "object"
+                }
+              ],
+              "decorators": [
+                {
+                  "value": "strong",
+                  "title": "Strong"
+                },
+                {
+                  "value": "em",
+                  "title": "Italic"
+                },
+                {
+                  "value": "code",
+                  "title": "Code"
+                },
+                {
+                  "value": "underline",
+                  "title": "Underline"
+                },
+                {
+                  "value": "strike-through",
+                  "title": "Strike"
+                }
+              ]
+            },
+            "lists": [
+              {
+                "value": "bullet",
+                "title": "Bulleted list"
+              },
+              {
+                "value": "number",
+                "title": "Numbered list"
+              }
+            ],
+            "styles": [
+              {
+                "value": "normal",
+                "title": "Normal"
+              },
+              {
+                "value": "h1",
+                "title": "Heading 1"
+              },
+              {
+                "value": "h2",
+                "title": "Heading 2"
+              },
+              {
+                "value": "h3",
+                "title": "Heading 3"
+              },
+              {
+                "value": "h4",
+                "title": "Heading 4"
+              },
+              {
+                "value": "h5",
+                "title": "Heading 5"
+              },
+              {
+                "value": "h6",
+                "title": "Heading 6"
+              },
+              {
+                "value": "blockquote",
+                "title": "Quote"
+              }
+            ],
+            "of": [],
+            "type": "block"
+          }
+        ],
+        "name": "content",
+        "type": "array"
+      }
+    ],
+    "name": "project",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "contributor",
+        "type": "string"
+      },
+      {
+        "options": {
+          "source": "contributor"
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "custom"
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "slug",
+        "type": "slug"
+      },
+      {
+        "name": "order",
+        "type": "number"
+      },
+      {
+        "of": [
+          {
+            "marks": {
+              "annotations": [
+                {
+                  "i18nTitleKey": "inputs.portable-text.annotation.link",
+                  "options": {
+                    "modal": {
+                      "type": "popover"
+                    }
+                  },
+                  "fields": [
+                    {
+                      "validation": [
+                        {
+                          "rules": [
+                            {
+                              "flag": "uri",
+                              "constraint": {
+                                "options": {
+                                  "scheme": [
+                                    "/^http$/",
+                                    "/^https$/",
+                                    "/^tel$/",
+                                    "/^mailto$/"
+                                  ],
+                                  "allowRelative": true,
+                                  "relativeOnly": false,
+                                  "allowCredentials": false
+                                }
+                              }
+                            }
+                          ],
+                          "level": "error"
+                        }
+                      ],
+                      "description": "A valid web, email, phone, or relative link.",
+                      "name": "href",
+                      "type": "url",
+                      "title": "Link"
+                    }
+                  ],
+                  "name": "link",
+                  "type": "object"
+                }
+              ],
+              "decorators": [
+                {
+                  "value": "strong",
+                  "title": "Strong"
+                },
+                {
+                  "value": "em",
+                  "title": "Italic"
+                },
+                {
+                  "value": "code",
+                  "title": "Code"
+                },
+                {
+                  "value": "underline",
+                  "title": "Underline"
+                },
+                {
+                  "value": "strike-through",
+                  "title": "Strike"
+                }
+              ]
+            },
+            "lists": [
+              {
+                "value": "bullet",
+                "title": "Bulleted list"
+              },
+              {
+                "value": "number",
+                "title": "Numbered list"
+              }
+            ],
+            "styles": [
+              {
+                "value": "normal",
+                "title": "Normal"
+              },
+              {
+                "value": "h1",
+                "title": "Heading 1"
+              },
+              {
+                "value": "h2",
+                "title": "Heading 2"
+              },
+              {
+                "value": "h3",
+                "title": "Heading 3"
+              },
+              {
+                "value": "h4",
+                "title": "Heading 4"
+              },
+              {
+                "value": "h5",
+                "title": "Heading 5"
+              },
+              {
+                "value": "h6",
+                "title": "Heading 6"
+              },
+              {
+                "value": "blockquote",
+                "title": "Quote"
+              }
+            ],
+            "of": [],
+            "type": "block"
+          },
+          {
+            "fields": [
+              {
+                "name": "caption",
+                "type": "string"
+              },
+              {
+                "name": "credit",
+                "type": "string"
+              },
+              {
+                "name": "alt",
+                "type": "string",
+                "title": "Alt text"
+              }
+            ],
+            "type": "image"
+          }
+        ],
+        "name": "content",
+        "type": "array"
+      },
+      {
+        "name": "pdf",
+        "type": "file",
+        "title": "Chapter PDF"
+      }
+    ],
+    "name": "chapter",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "contributor",
+        "type": "string"
+      },
+      {
+        "options": {
+          "source": "contributor"
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "custom"
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "slug",
+        "type": "slug"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "order",
+        "type": "number",
+        "title": "Order in the book"
+      },
+      {
+        "initialValue": false,
+        "description": "On: clickable, with its pages, recordings or video available on the website. Off: listed in the contents but greyed out.",
+        "name": "open",
+        "type": "boolean",
+        "title": "Open on the site"
+      },
+      {
+        "rows": 5,
+        "description": "The short copy framing this material as an accompaniment to the book. Separate paragraphs with a blank line.",
+        "name": "intro",
+        "type": "text",
+        "title": "Accompanying text"
+      },
+      {
+        "description": "Only for contributions readable in full on the site. Upload WebP pages in reading order.",
+        "of": [
+          {
+            "options": {
+              "hotspot": false
+            },
+            "fields": [
+              {
+                "name": "pageNumber",
+                "type": "number",
+                "title": "Printed page number"
+              },
+              {
+                "name": "alt",
+                "type": "string",
+                "title": "Alt text"
+              }
+            ],
+            "type": "image"
+          }
+        ],
+        "name": "pages",
+        "type": "array",
+        "title": "Publication pages"
+      },
+      {
+        "options": {
+          "accept": ".pdf"
+        },
+        "description": "Only add this when the contribution should be readable and downloadable. It also powers the selectable text.",
+        "name": "pdf",
+        "type": "file",
+        "title": "Contribution PDF"
+      },
+      {
+        "description": "Shown in the order listed here.",
+        "of": [
+          {
+            "fields": [
+              {
+                "name": "title",
+                "type": "string"
+              },
+              {
+                "options": {
+                  "accept": "audio/*"
+                },
+                "validation": [
+                  {
+                    "rules": [
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ],
+                    "level": "error"
+                  }
+                ],
+                "name": "file",
+                "type": "file",
+                "title": "MP3 file"
+              },
+              {
+                "name": "transcript",
+                "type": "text"
+              }
+            ],
+            "type": "object",
+            "name": "audio",
+            "title": "Audio recording"
+          },
+          {
+            "fields": [
+              {
+                "name": "title",
+                "type": "string"
+              },
+              {
+                "validation": [
+                  {
+                    "rules": [
+                      {
+                        "flag": "uri",
+                        "constraint": {
+                          "options": {
+                            "scheme": [
+                              "/^http$/",
+                              "/^https$/"
+                            ],
+                            "allowRelative": false,
+                            "relativeOnly": false,
+                            "allowCredentials": false
+                          }
+                        }
+                      },
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ],
+                    "level": "error"
+                  }
+                ],
+                "description": "The YouTube or Vimeo link",
+                "name": "url",
+                "type": "url"
+              }
+            ],
+            "type": "object",
+            "name": "video",
+            "title": "Video (YouTube or Vimeo)"
+          },
+          {
+            "fields": [
+              {
+                "name": "title",
+                "type": "string"
+              },
+              {
+                "options": {
+                  "accept": "audio/*"
+                },
+                "validation": [
+                  {
+                    "rules": [
+                      {
+                        "flag": "presence",
+                        "constraint": "required"
+                      }
+                    ],
+                    "level": "error"
+                  }
+                ],
+                "name": "file",
+                "type": "file",
+                "title": "Audio (MP3)"
+              },
+              {
+                "of": [
+                  {
+                    "fields": [
+                      {
+                        "validation": [
+                          {
+                            "rules": [
+                              {
+                                "flag": "presence",
+                                "constraint": "required"
+                              }
+                            ],
+                            "level": "error"
+                          }
+                        ],
+                        "name": "image",
+                        "type": "image"
+                      },
+                      {
+                        "validation": [
+                          {
+                            "rules": [
+                              {
+                                "flag": "presence",
+                                "constraint": "required"
+                              },
+                              {
+                                "flag": "regex",
+                                "constraint": {
+                                  "pattern": "/^(\\d+:)?\\d{1,2}:\\d{2}$/",
+                                  "name": "Use m:ss, for example 1:05",
+                                  "invert": false
+                                }
+                              }
+                            ],
+                            "level": "error"
+                          }
+                        ],
+                        "description": "When this slide appears in the recording, as m:ss. The first slide is 0:00.",
+                        "name": "startTime",
+                        "type": "string",
+                        "title": "Appears at"
+                      },
+                      {
+                        "name": "alt",
+                        "type": "string",
+                        "title": "Alt text"
+                      },
+                      {
+                        "name": "caption",
+                        "type": "string"
+                      }
+                    ],
+                    "type": "object",
+                    "name": "slide"
+                  }
+                ],
+                "name": "slides",
+                "type": "array"
+              },
+              {
+                "name": "transcript",
+                "type": "text"
+              }
+            ],
+            "type": "object",
+            "name": "slideshow",
+            "title": "Slideshow with audio"
+          }
+        ],
+        "name": "media",
+        "type": "array",
+        "title": "Audiovisual material"
+      }
+    ],
+    "name": "imageChapter",
+    "type": "document",
+    "title": "Contribution"
+  },
+  {
+    "fields": [
+      {
+        "initialValue": "Site Settings",
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "of": [
+          {
+            "options": {
+              "hotspot": true
+            },
+            "type": "image"
+          }
+        ],
+        "name": "homepageImages",
+        "type": "array"
+      }
+    ],
+    "name": "siteSettings",
+    "type": "document"
+  }
+]

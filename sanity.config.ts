@@ -4,15 +4,13 @@ import { structureTool } from 'sanity/structure';
 import { schemaTypes } from './sanity/schemaTypes';
 
 const config = defineConfig({
-  projectId: 'b04mdi1e',
+  projectId: '0ucttlat',
   dataset: 'production',
   title: 'Uhuru Phalafala Website',
   apiVersion: '2024-04-30',
   basePath: '/admin',
   plugins: [structureTool()],
-  schema: {
-    types: schemaTypes,
-  },
+  schema: { types: schemaTypes },
   scheduledPublishing: {
     enabled: true,
     showReleasesBanner: false,
