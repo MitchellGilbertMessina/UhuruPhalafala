@@ -11,6 +11,7 @@ import PublicationLanding from "@/components/publication/PublicationLanding";
 import ChapterMedia from "@/components/publication/ChapterMedia";
 import styles from "./ImagePublicationReader.module.css";
 
+
 type Props = {
   chapters: ImageChapter[];
   initialSlug: string | null;
@@ -38,6 +39,8 @@ export default function ImagePublicationReader({
 
   const onLanding = activeKey === LANDING_KEY;
   const activeSlug = onLanding ? null : activeKey;
+  const sidebarRef = useRef<HTMLElement>(null);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
   // Scroll to the requested contribution (or the landing) on first load.
   useEffect(() => {
@@ -124,6 +127,57 @@ export default function ImagePublicationReader({
     };
   }, []);
 
+  // Subtle scroll indicator: a dot that tracks the sidebar's scroll position.
+  useEffect(() => {
+    const aside = sidebarRef.current;
+    const scroller = sidebarScrollRef.current;
+    if (!aside || !scroller) return;
+
+    const update = () => {
+      const max = scroller.scrollHeight - scroller.clientHeight;
+      aside.dataset.scrollable = String(max > 1);
+      aside.style.setProperty(
+        "--sb",
+        max > 1 ? String(scroller.scrollTop / max) : "0"
+      );
+    };
+
+    update();
+    scroller.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+
+    return () => {
+      scroller.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  // Gently bring the active contribution into view in the sidebar.
+  useEffect(() => {
+    const scroller = sidebarScrollRef.current;
+    if (!scroller || !activeSlug) return;
+
+    // the contents list is rendered twice (desktop + phone); pick the visible one
+    const link = Array.from(
+      scroller.querySelectorAll<HTMLElement>(`[data-slug="${activeSlug}"]`)
+    ).find((el) => el.getClientRects().length > 0);
+    if (!link) return;
+
+    const box = scroller.getBoundingClientRect();
+    const rect = link.getBoundingClientRect();
+    const topEdge = box.top + parseFloat(getComputedStyle(scroller).paddingTop);
+    const bottomEdge = box.bottom - 48;
+
+    if (rect.top < topEdge || rect.bottom > bottomEdge) {
+      scroller.scrollTo({
+        top: scroller.scrollTop + (rect.top - box.top) - box.height * 0.35,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      });
+    }
+  }, [activeSlug]);
+
   const jumpToChapter = (slug: string) => {
     if (menuRef.current) menuRef.current.open = false;
     document
@@ -167,32 +221,32 @@ export default function ImagePublicationReader({
       <PublicationLanding aboutActive={aboutActive} />
 
       <main className={styles.reader}>
-        <aside className={styles.sidebar} inert={!sidebarActive}>
-          <Link
-            href="/sensuousheirlooms"
-            className={styles.mobileHome}
-            onClick={goHome}
-          >
-            ← Sensuous Heirlooms
-          </Link>
+        <aside ref={sidebarRef} className={styles.sidebar} inert={!sidebarActive}>
+          <div ref={sidebarScrollRef} className={styles.sidebarScroll}>
+            <Link href="/sensuousheirlooms" className={styles.mobileHome} onClick={goHome}>
+              ← Sensuous Heirlooms
+            </Link>
 
-          <details className={styles.mobileMenu} ref={menuRef}>
-            <summary>Contents</summary>
-            <ContentsList
-              chapters={chapters}
-              activeSlug={activeSlug}
-              onJump={jumpToChapter}
-            />
-          </details>
+            <details className={styles.mobileMenu} ref={menuRef}>
+              <summary>Contents</summary>
+              <ContentsList
+                chapters={chapters}
+                activeSlug={activeSlug}
+                onJump={jumpToChapter}
+              />
+            </details>
 
-          <div className={styles.desktopMenu}>
-            <p>CONTENTS</p>
-            <ContentsList
-              chapters={chapters}
-              activeSlug={activeSlug}
-              onJump={jumpToChapter}
-            />
+            <div className={styles.desktopMenu}>
+              <p>CONTENTS</p>
+              <ContentsList
+                chapters={chapters}
+                activeSlug={activeSlug}
+                onJump={jumpToChapter}
+              />
+            </div>
           </div>
+
+          <span className={styles.scrollDot} aria-hidden="true" />
         </aside>
 
         <section className={styles.readingArea} onCopy={handleCopy}>
@@ -337,6 +391,7 @@ function ContentsList({
               {isOpenChapter(chapter) ? (
                 <Link
                   href={`/sensuousheirlooms/${chapter.slug}`}
+                  data-slug={chapter.slug}
                   className={styles.contentsLink}
                   aria-current={chapter.slug === activeSlug ? "page" : undefined}
                   onClick={(e) => {
