@@ -218,7 +218,10 @@ export default function ImagePublicationReader({
         />
       </Link>
 
-      <PublicationLanding aboutActive={aboutActive} />
+      <PublicationLanding
+        aboutActive={aboutActive}
+        onAdvance={advanceLanding}
+      />
 
       <main className={styles.reader}>
         <aside ref={sidebarRef} className={styles.sidebar} inert={!sidebarActive}>
@@ -430,6 +433,36 @@ function PageImage({
     if (img?.complete && img.naturalWidth > 0) setLoaded(true);
   }, []);
 
+
+  const advanceLanding = () => {
+    const landingElement = document.getElementById("landing");
+    if (!landingElement) return;
+
+    const stage = landingElement.firstElementChild as HTMLElement | null;
+    if (!stage) return;
+
+    const rect = landingElement.getBoundingClientRect();
+    const total = rect.height - stage.offsetHeight;
+    if (total <= 0) return;
+
+    const currentProgress = Math.min(
+      1,
+      Math.max(0, -rect.top / total)
+    );
+
+    // First tap: show the information.
+    // Second tap: move to the publication.
+    const targetProgress = currentProgress < 0.65 ? 0.42 : 1;
+
+    window.scrollTo({
+      top: window.scrollY + rect.top + total * targetProgress,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  };
+
+
   return (
     <div className={styles.pageImage} data-page-image data-loaded={loaded}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -453,3 +486,32 @@ function PageImage({
     </div>
   );
 }
+
+
+const advanceLanding = () => {
+  const landingElement = document.getElementById("landing");
+  if (!landingElement) return;
+
+  const stage = landingElement.firstElementChild as HTMLElement | null;
+  if (!stage) return;
+
+  const rect = landingElement.getBoundingClientRect();
+  const total = rect.height - stage.offsetHeight;
+  if (total <= 0) return;
+
+  const currentProgress = Math.min(
+    1,
+    Math.max(0, -rect.top / total)
+  );
+
+  // First tap: show the information.
+  // Second tap: move to the publication.
+  const targetProgress = currentProgress < 0.65 ? 0.42 : 1;
+
+  window.scrollTo({
+    top: window.scrollY + rect.top + total * targetProgress,
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "auto"
+      : "smooth",
+  });
+};

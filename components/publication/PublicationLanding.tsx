@@ -1,15 +1,25 @@
+
 /* eslint-disable @next/next/no-img-element */
+import type { MouseEvent } from "react";
 import { landing } from "@/content/sensuousHeirloomsLanding";
 import styles from "./PublicationLanding.module.css";
 
 export default function PublicationLanding({
   aboutActive,
+  onAdvance,
 }: {
   aboutActive: boolean;
+  onAdvance: () => void;
 }) {
+  const handleStageClick = (event: MouseEvent<HTMLDivElement>) => {
+    // Preserve the normal behaviour of the external links.
+    if ((event.target as HTMLElement).closest("a")) return;
+    onAdvance();
+  };
+
   return (
     <section id="landing" className={styles.landing} data-reader-page="landing">
-      <div className={styles.stage}>
+      <div className={styles.stage} onClick={handleStageClick}>
         <picture className={styles.bg}>
           <source media="(max-width: 700px)" srcSet={landing.bgPortraitSrc} />
           <img src={landing.bgLandscapeSrc} alt="" />
