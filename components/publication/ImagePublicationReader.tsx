@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -10,7 +11,6 @@ import SelectablePublicationPage from "@/components/publication/SelectablePublic
 import PublicationLanding from "@/components/publication/PublicationLanding";
 import ChapterMedia from "@/components/publication/ChapterMedia";
 import styles from "./ImagePublicationReader.module.css";
-
 
 type Props = {
   chapters: ImageChapter[];
@@ -28,30 +28,38 @@ export default function ImagePublicationReader({
 }: Props) {
   const startsPastLanding = initialSlug !== null;
 
-  const [activeKey, setActiveKey] = useState<string>(initialSlug ?? LANDING_KEY);
+  const [activeKey, setActiveKey] = useState<string>(
+    initialSlug ?? LANDING_KEY
+  );
   const [aboutActive, setAboutActive] = useState(false);
   const [sidebarActive, setSidebarActive] = useState(startsPastLanding);
+
   const initialScrollDone = useRef(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDetailsElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
-  const openChapters = useMemo(() => chapters.filter(isOpenChapter), [chapters]);
+  const openChapters = useMemo(
+    () => chapters.filter(isOpenChapter),
+    [chapters]
+  );
 
   const onLanding = activeKey === LANDING_KEY;
   const activeSlug = onLanding ? null : activeKey;
-  const sidebarRef = useRef<HTMLElement>(null);
-  const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
   // Scroll to the requested contribution (or the landing) on first load.
   useEffect(() => {
     const target = document.getElementById(
       initialSlug ? `chapter-${initialSlug}` : "landing"
     );
+
     target?.scrollIntoView({ block: "start" });
 
     const id = requestAnimationFrame(() => {
       initialScrollDone.current = true;
     });
+
     return () => cancelAnimationFrame(id);
   }, [initialSlug]);
 
@@ -64,13 +72,19 @@ export default function ImagePublicationReader({
       : `/sensuousheirlooms/${activeKey}`;
 
     if (window.location.pathname !== expectedPath) {
-      window.history.replaceState(window.history.state, "", expectedPath);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        expectedPath
+      );
     }
   }, [activeKey, onLanding]);
 
   // Work out which section sits near the top of the viewport.
   useEffect(() => {
-    const elements = document.querySelectorAll<HTMLElement>("[data-reader-page]");
+    const elements = document.querySelectorAll<HTMLElement>(
+      "[data-reader-page]"
+    );
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -83,12 +97,17 @@ export default function ImagePublicationReader({
           );
 
         const key = visible[0]?.target.getAttribute("data-reader-page");
+
         if (key) setActiveKey(key);
       },
-      { rootMargin: "-10% 0px -65% 0px", threshold: 0 }
+      {
+        rootMargin: "-10% 0px -65% 0px",
+        threshold: 0,
+      }
     );
 
     elements.forEach((element) => observer.observe(element));
+
     return () => observer.disconnect();
   }, [chapters]);
 
@@ -96,46 +115,95 @@ export default function ImagePublicationReader({
   useEffect(() => {
     const shell = shellRef.current;
     const landing = document.getElementById("landing");
+
     if (!shell || !landing) return;
 
     let frame = 0;
 
     const update = () => {
       frame = 0;
-      const rect = landing.getBoundingClientRect();
-      const stageHeight = (landing.firstElementChild as HTMLElement).offsetHeight;
-      const total = rect.height - stageHeight;
-      const p = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 1;
 
-      shell.style.setProperty("--p", p.toFixed(4));
-      setAboutActive(p > 0.3 && p < 0.62);
-      setSidebarActive(p > 0.95);
+      const rect = landing.getBoundingClientRect();
+      const stage = landing.firstElementChild as HTMLElement | null;
+
+      if (!stage) return;
+
+      const total = landing.offsetHeight - stage.offsetHeight;
+
+      const progress =
+        total > 0
+          ? Math.min(1, Math.max(0, -rect.top / total))
+          : 1;
+
+      shell.style.setProperty("--p", progress.toFixed(4));
+
+      setAboutActive(progress > 0.3 && progress < 0.62);
+      setSidebarActive(progress > 0.95);
     };
 
     const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
+      if (!frame) {
+        frame = requestAnimationFrame(update);
+      }
     };
 
     update();
+
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
 
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
-      cancelAnimationFrame(frame);
+
+      if (frame) cancelAnimationFrame(frame);
     };
   }, []);
+
+  // Advance the landing when the user taps the names, description, or background.
+  const advanceLanding = () => {
+    const landing = document.getElementById("landing");
+    if (!landing) return;
+
+    const stage = landing.firstElementChild as HTMLElement | null;
+    if (!stage) return;
+
+    const rect = landing.getBoundingClientRect();
+    const total = landing.offsetHeight - stage.offsetHeight;
+
+    if (total <= 0) return;
+
+    const currentProgress = Math.min(
+      1,
+      Math.max(0, -rect.top / total)
+    );
+
+    // First tap: names → description.
+    // Second tap: description → publication.
+    const targetProgress = currentProgress < 0.3 ? 0.42 : 1;
+
+    const targetY = window.scrollY + rect.top + total * targetProgress;
+
+    window.scrollTo({
+      top: Math.max(0, targetY),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  };
 
   // Subtle scroll indicator: a dot that tracks the sidebar's scroll position.
   useEffect(() => {
     const aside = sidebarRef.current;
     const scroller = sidebarScrollRef.current;
+
     if (!aside || !scroller) return;
 
     const update = () => {
       const max = scroller.scrollHeight - scroller.clientHeight;
+
       aside.dataset.scrollable = String(max > 1);
+
       aside.style.setProperty(
         "--sb",
         max > 1 ? String(scroller.scrollTop / max) : "0"
@@ -143,6 +211,7 @@ export default function ImagePublicationReader({
     };
 
     update();
+
     scroller.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
 
@@ -155,23 +224,34 @@ export default function ImagePublicationReader({
   // Gently bring the active contribution into view in the sidebar.
   useEffect(() => {
     const scroller = sidebarScrollRef.current;
+
     if (!scroller || !activeSlug) return;
 
-    // the contents list is rendered twice (desktop + phone); pick the visible one
+    // The contents list is rendered twice (desktop + phone);
+    // pick the visible one.
     const link = Array.from(
-      scroller.querySelectorAll<HTMLElement>(`[data-slug="${activeSlug}"]`)
-    ).find((el) => el.getClientRects().length > 0);
+      scroller.querySelectorAll<HTMLElement>(
+        `[data-slug="${activeSlug}"]`
+      )
+    ).find((element) => element.getClientRects().length > 0);
+
     if (!link) return;
 
     const box = scroller.getBoundingClientRect();
     const rect = link.getBoundingClientRect();
-    const topEdge = box.top + parseFloat(getComputedStyle(scroller).paddingTop);
+
+    const topEdge =
+      box.top + parseFloat(getComputedStyle(scroller).paddingTop);
     const bottomEdge = box.bottom - 48;
 
     if (rect.top < topEdge || rect.bottom > bottomEdge) {
       scroller.scrollTo({
-        top: scroller.scrollTop + (rect.top - box.top) - box.height * 0.35,
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        top:
+          scroller.scrollTop +
+          (rect.top - box.top) -
+          box.height * 0.35,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+          .matches
           ? "auto"
           : "smooth",
       });
@@ -179,16 +259,32 @@ export default function ImagePublicationReader({
   }, [activeSlug]);
 
   const jumpToChapter = (slug: string) => {
-    if (menuRef.current) menuRef.current.open = false;
+    if (menuRef.current) {
+      menuRef.current.open = false;
+    }
+
     document
       .getElementById(`chapter-${slug}`)
       ?.scrollIntoView({ block: "start" });
   };
 
-  const goHome = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-    e.preventDefault();
-    document.getElementById("landing")?.scrollIntoView({ block: "start" });
+  const goHome = (event: MouseEvent<HTMLAnchorElement>) => {
+    // Preserve normal behaviour for opening the link in a new tab.
+    if (
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    document
+      .getElementById("landing")
+      ?.scrollIntoView({ block: "start" });
   };
 
   return (
@@ -209,6 +305,7 @@ export default function ImagePublicationReader({
           src="/sensuous-heirlooms-logo-black.svg"
           alt="Sensuous Heirlooms"
         />
+
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className={styles.logoWhite}
@@ -224,14 +321,29 @@ export default function ImagePublicationReader({
       />
 
       <main className={styles.reader}>
-        <aside ref={sidebarRef} className={styles.sidebar} inert={!sidebarActive}>
-          <div ref={sidebarScrollRef} className={styles.sidebarScroll}>
-            <Link href="/sensuousheirlooms" className={styles.mobileHome} onClick={goHome}>
+        <aside
+          ref={sidebarRef}
+          className={styles.sidebar}
+          inert={!sidebarActive}
+        >
+          <div
+            ref={sidebarScrollRef}
+            className={styles.sidebarScroll}
+          >
+            <Link
+              href="/sensuousheirlooms"
+              className={styles.mobileHome}
+              onClick={goHome}
+            >
               ← Sensuous Heirlooms
             </Link>
 
-            <details className={styles.mobileMenu} ref={menuRef}>
+            <details
+              className={styles.mobileMenu}
+              ref={menuRef}
+            >
               <summary>Contents</summary>
+
               <ContentsList
                 chapters={chapters}
                 activeSlug={activeSlug}
@@ -241,6 +353,7 @@ export default function ImagePublicationReader({
 
             <div className={styles.desktopMenu}>
               <p>CONTENTS</p>
+
               <ContentsList
                 chapters={chapters}
                 activeSlug={activeSlug}
@@ -252,7 +365,10 @@ export default function ImagePublicationReader({
           <span className={styles.scrollDot} aria-hidden="true" />
         </aside>
 
-        <section className={styles.readingArea} onCopy={handleCopy}>
+        <section
+          className={styles.readingArea}
+          onCopy={handleCopy}
+        >
           {openChapters.map((chapter, index) => {
             const pages = chapter.pages ?? [];
             const pdfUrl = chapter.pdf?.asset?.url ?? null;
@@ -268,12 +384,17 @@ export default function ImagePublicationReader({
                     <p className={styles.contributionAuthor}>
                       {chapter.contributor}
                     </p>
+
                     <h2 className={styles.contributionTitle}>
                       {chapter.title}
+
                       {pdfUrl && (
                         <a
                           className={styles.downloadLink}
-                          href={withDownload(pdfUrl, `${chapter.contributor} - Sensuous Heirlooms.pdf`)}
+                          href={withDownload(
+                            pdfUrl,
+                            `${chapter.contributor} - Sensuous Heirlooms.pdf`
+                          )}
                           aria-label={`Download ${chapter.contributor} as a PDF`}
                           title="Download PDF"
                         >
@@ -285,9 +406,11 @@ export default function ImagePublicationReader({
 
                   {chapter.intro && (
                     <div className={styles.intro}>
-                      {chapter.intro.split(/\n{2,}/).map((paragraph, i) => (
-                        <p key={i}>{paragraph}</p>
-                      ))}
+                      {chapter.intro
+                        .split(/\n{2,}/)
+                        .map((paragraph, paragraphIndex) => (
+                          <p key={paragraphIndex}>{paragraph}</p>
+                        ))}
                     </div>
                   )}
 
@@ -296,7 +419,10 @@ export default function ImagePublicationReader({
                   {pages.length > 0 && (
                     <div className={styles.pages}>
                       {pages.map((page, pageIndex) => (
-                        <figure className={styles.page} key={page._key}>
+                        <figure
+                          className={styles.page}
+                          key={page._key}
+                        >
                           <SelectablePublicationPage
                             pdfUrl={pdfUrl}
                             pdfPageIndex={pageIndex}
@@ -305,7 +431,9 @@ export default function ImagePublicationReader({
                               src={page.url}
                               alt={
                                 page.alt ||
-                                `${chapter.title.replace(/\s*\n\s*/g, " / ")}, page ${page.pageNumber ?? pageIndex + 1}`
+                                `${chapter.title.replace(/\s*\n\s*/g, " / ")}, page ${
+                                  page.pageNumber ?? pageIndex + 1
+                                }`
                               }
                               sizes="(max-width: 700px) 96vw, 70vw"
                             />
@@ -317,7 +445,10 @@ export default function ImagePublicationReader({
 
                   {index < openChapters.length - 1 && (
                     <div className={styles.dividerWrap}>
-                      <div className={styles.divider} role="separator" />
+                      <div
+                        className={styles.divider}
+                        role="separator"
+                      />
                     </div>
                   )}
                 </article>
@@ -334,13 +465,14 @@ export default function ImagePublicationReader({
 
 const handleCopy = (event: ClipboardEvent<HTMLElement>) => {
   const selection = window.getSelection();
+
   if (!selection || selection.isCollapsed) return;
 
   const text = selection
     .toString()
     .replace(/\r/g, "")
-    .replace(/[\uFFFC\uFFFD\u00AD]/g, "") // object/replacement chars, soft hyphens
-    .replace(/\n{2,}/g, "\n") // collapse the doubled line breaks
+    .replace(/[\uFFFC\uFFFD\u00AD]/g, "")
+    .replace(/\n{2,}/g, "\n")
     .trim();
 
   event.clipboardData.setData("text/plain", text);
@@ -380,8 +512,13 @@ function ContentsList({
         {chapters.map((chapter) => {
           const label = (
             <>
-              <span className={styles.contentsAuthor}>{chapter.contributor}</span>
-              <span className={styles.contentsTitle}>{chapter.title}</span>
+              <span className={styles.contentsAuthor}>
+                {chapter.contributor}
+              </span>
+
+              <span className={styles.contentsTitle}>
+                {chapter.title}
+              </span>
             </>
           );
 
@@ -392,18 +529,31 @@ function ContentsList({
                   href={`/sensuousheirlooms/${chapter.slug}`}
                   data-slug={chapter.slug}
                   className={styles.contentsLink}
-                  aria-current={chapter.slug === activeSlug ? "page" : undefined}
-                  onClick={(e) => {
-                    // let cmd/ctrl/middle-click open a new tab as normal
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-                    e.preventDefault();
+                  aria-current={
+                    chapter.slug === activeSlug ? "page" : undefined
+                  }
+                  onClick={(event) => {
+                    // Let cmd/ctrl/middle-click open a new tab normally.
+                    if (
+                      event.metaKey ||
+                      event.ctrlKey ||
+                      event.shiftKey ||
+                      event.altKey ||
+                      event.button !== 0
+                    ) {
+                      return;
+                    }
+
+                    event.preventDefault();
                     onJump(chapter.slug);
                   }}
                 >
                   {label}
                 </Link>
               ) : (
-                <span className={styles.contentsClosed}>{label}</span>
+                <span className={styles.contentsClosed}>
+                  {label}
+                </span>
               )}
             </li>
           );
@@ -413,7 +563,8 @@ function ContentsList({
   );
 }
 
-const tinyUrl = (url: string) => `${url}?w=32&q=40&auto=format`;
+const tinyUrl = (url: string) =>
+  `${url}?w=32&q=40&auto=format`;
 
 function PageImage({
   src,
@@ -430,41 +581,18 @@ function PageImage({
   // Covers images that finished loading before hydration.
   useEffect(() => {
     const img = imgRef.current;
-    if (img?.complete && img.naturalWidth > 0) setLoaded(true);
+
+    if (img?.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+    }
   }, []);
 
-
-  const advanceLanding = () => {
-    const landingElement = document.getElementById("landing");
-    if (!landingElement) return;
-
-    const stage = landingElement.firstElementChild as HTMLElement | null;
-    if (!stage) return;
-
-    const rect = landingElement.getBoundingClientRect();
-    const total = rect.height - stage.offsetHeight;
-    if (total <= 0) return;
-
-    const currentProgress = Math.min(
-      1,
-      Math.max(0, -rect.top / total)
-    );
-
-    // First tap: show the information.
-    // Second tap: move to the publication.
-    const targetProgress = currentProgress < 0.65 ? 0.42 : 1;
-
-    window.scrollTo({
-      top: window.scrollY + rect.top + total * targetProgress,
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-    });
-  };
-
-
   return (
-    <div className={styles.pageImage} data-page-image data-loaded={loaded}>
+    <div
+      className={styles.pageImage}
+      data-page-image
+      data-loaded={loaded}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         className={styles.placeholder}
@@ -472,6 +600,7 @@ function PageImage({
         alt=""
         aria-hidden="true"
       />
+
       <Image
         ref={imgRef}
         src={src}
@@ -486,32 +615,3 @@ function PageImage({
     </div>
   );
 }
-
-
-const advanceLanding = () => {
-  const landingElement = document.getElementById("landing");
-  if (!landingElement) return;
-
-  const stage = landingElement.firstElementChild as HTMLElement | null;
-  if (!stage) return;
-
-  const rect = landingElement.getBoundingClientRect();
-  const total = rect.height - stage.offsetHeight;
-  if (total <= 0) return;
-
-  const currentProgress = Math.min(
-    1,
-    Math.max(0, -rect.top / total)
-  );
-
-  // First tap: show the information.
-  // Second tap: move to the publication.
-  const targetProgress = currentProgress < 0.65 ? 0.42 : 1;
-
-  window.scrollTo({
-    top: window.scrollY + rect.top + total * targetProgress,
-    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ? "auto"
-      : "smooth",
-  });
-};
