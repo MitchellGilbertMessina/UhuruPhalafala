@@ -116,6 +116,16 @@ export async function getImageChapters(): Promise<ImageChapter[]> {
         transcript,
         url,
         "audioUrl": file.asset->url,
+        "posterUrl": poster.asset->url,
+slideDuration,
+"images": images[]{
+  _key,
+  alt,
+  caption,
+  "url": asset->url,
+  "width": asset->metadata.dimensions.width,
+  "height": asset->metadata.dimensions.height
+},
         "slides": slides[]{
           _key,
           startTime,

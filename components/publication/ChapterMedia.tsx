@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AudioMedia,
   ChapterMedia as ChapterMediaItem,
@@ -34,35 +34,57 @@ function sized(url: string, width = 1600) {
     : url;
 }
 
-function toEmbedUrl(raw: string): string | null {
+type ParsedVideo = {
+  provider: "youtube" | "vimeo";
+  id: string;
+  hash?: string;
+};
+
+function parseVideo(raw: string): ParsedVideo | null {
   try {
     const u = new URL(raw);
     const host = u.hostname.replace(/^www\./, "");
 
     if (host === "youtu.be") {
       const id = u.pathname.slice(1);
-      return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
+      return id ? { provider: "youtube", id } : null;
     }
 
     if (host === "youtube.com" || host === "m.youtube.com") {
       const id = u.searchParams.get("v");
-      if (id) return `https://www.youtube-nocookie.com/embed/${id}`;
+      if (id) return { provider: "youtube", id };
       const m = u.pathname.match(/^\/(embed|shorts|live)\/([\w-]+)/);
-      if (m) return `https://www.youtube-nocookie.com/embed/${m[2]}`;
+      if (m) return { provider: "youtube", id: m[2] };
     }
-
-    if (host === "player.vimeo.com") return raw;
 
     if (host === "vimeo.com") {
       const [id, hash] = u.pathname.split("/").filter(Boolean);
-      if (id && /^\d+$/.test(id)) {
-        return `https://player.vimeo.com/video/${id}?${hash ? `h=${hash}&` : ""}dnt=1`;
+      if (id && /^\d+$/.test(id)) return { provider: "vimeo", id, hash };
+    }
+
+    if (host === "player.vimeo.com") {
+      const m = u.pathname.match(/^\/video\/(\d+)/);
+      if (m) {
+        return {
+          provider: "vimeo",
+          id: m[1],
+          hash: u.searchParams.get("h") ?? undefined,
+        };
       }
     }
   } catch {
     // fall through
   }
   return null;
+}
+
+function embedSrc(video: ParsedVideo): string {
+  if (video.provider === "youtube") {
+    return `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&color=white`;
+  }
+  return `https://player.vimeo.com/video/${video.id}?${
+    video.hash ? `h=${video.hash}&` : ""
+  }autoplay=1&title=0&byline=0&portrait=0&dnt=1`;
 }
 
 /* ---------- shared pieces ---------- */
@@ -85,9 +107,6 @@ function AudioItem({ item }: { item: AudioMedia }) {
 
   return (
     <figure className={styles.item}>
-      {item.title && (
-        <figcaption className={styles.itemTitle}>{item.title}</figcaption>
-      )}
       <audio
         className={styles.audio}
         controls
@@ -95,39 +114,72 @@ function AudioItem({ item }: { item: AudioMedia }) {
         src={item.audioUrl}
         onPlay={(e) => pauseOtherAudio(e.currentTarget)}
       />
+      {item.title && (
+        <figcaption className={styles.itemTitle}>{item.title}</figcaption>
+      )}
       {item.transcript && <Transcript text={item.transcript} />}
     </figure>
   );
 }
 
-/* ---------- video ---------- */
+/* ---------- video: clean poster first, player on click ---------- */
 
 function VideoItem({ item }: { item: VideoMedia }) {
-  if (!item.url) return null;
+  const video = item.url ? parseVideo(item.url) : null;
+  const ytId = video?.provider === "youtube" ? video.id : null;
 
-  const embed = toEmbedUrl(item.url);
+  const [playing, setPlaying] = useState(false);
+  const [poster, setPoster] = useState<string | null>(
+    item.posterUrl
+      ? sized(item.posterUrl)
+      : ytId
+        ? `https://i.ytimg.com/vi/${ytId}/maxresdefault.jpg`
+        : null
+  );
+
+  if (!item.url) return null;
 
   return (
     <figure className={styles.item}>
-      {item.title && (
-        <figcaption className={styles.itemTitle}>{item.title}</figcaption>
-      )}
-
-      {embed ? (
+      {video ? (
         <div className={styles.video}>
-          <iframe
-            src={embed}
-            title={item.title ?? "Video"}
-            loading="lazy"
-            allow="accelerometer; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            allowFullScreen
-            referrerPolicy="strict-origin-when-cross-origin"
-          />
+          {playing ? (
+            <iframe
+              src={embedSrc(video)}
+              title={item.title ?? "Video"}
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          ) : (
+            <button
+              className={styles.poster}
+              onClick={() => setPlaying(true)}
+              aria-label={`Play video${item.title ? `: ${item.title}` : ""}`}
+            >
+              {poster && (
+                <img
+                  src={poster}
+                  alt=""
+                  onError={() => {
+                    if (ytId) setPoster(`https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`);
+                  }}
+                />
+              )}
+              <span className={styles.playIcon} aria-hidden="true">
+                ▶
+              </span>
+            </button>
+          )}
         </div>
       ) : (
         <a className={styles.link} href={item.url} target="_blank" rel="noreferrer">
           Watch ↗
         </a>
+      )}
+
+      {item.title && (
+        <figcaption className={styles.itemTitle}>{item.title}</figcaption>
       )}
     </figure>
   );
@@ -135,18 +187,60 @@ function VideoItem({ item }: { item: VideoMedia }) {
 
 /* ---------- slideshow that follows a recording ---------- */
 
+type Slide = {
+  _key: string;
+  url?: string;
+  alt?: string;
+  caption?: string;
+  width?: number;
+  height?: number;
+  start: number; // seconds into the recording
+};
+
 function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [current, setCurrent] = useState(0);
+  const [reach, setReach] = useState(3); // how many slides are loaded ahead
+  const [duration, setDuration] = useState(0);
 
-  const slides = useMemo(
-    () =>
-      (item.slides ?? [])
-        .filter((slide) => slide.url)
-        .map((slide) => ({ ...slide, start: parseTime(slide.startTime) }))
-        .sort((a, b) => a.start - b.start),
-    [item.slides]
-  );
+  const slides = useMemo<Slide[]>(() => {
+    // Custom timings win, if the editor entered any.
+    const timed: Slide[] = (item.slides ?? [])
+      .filter((s) => s.url)
+      .map((s) => ({
+        _key: s._key,
+        url: s.url,
+        alt: s.alt,
+        caption: s.caption,
+        width: s.width,
+        height: s.height,
+        start: parseTime(s.startTime),
+      }))
+      .sort((a, b) => a.start - b.start);
+
+    if (timed.length) return timed;
+
+    // Otherwise spread the images evenly across the recording.
+    const images = (item.images ?? []).filter((img) => img.url);
+    const step =
+      item.slideDuration ||
+      (duration > 0 && images.length ? duration / images.length : 0);
+
+    return images.map((img, i) => ({
+      _key: img._key,
+      url: img.url,
+      alt: img.alt,
+      caption: img.caption,
+      width: img.width,
+      height: img.height,
+      start: i === 0 ? 0 : step ? i * step : Number.POSITIVE_INFINITY,
+    }));
+  }, [item.slides, item.images, item.slideDuration, duration]);
+
+  // Keep loading a few slides ahead of whichever one is showing.
+  useEffect(() => {
+    setReach((r) => Math.max(r, current + 3));
+  }, [current]);
 
   if (!slides.length) return null;
 
@@ -173,27 +267,31 @@ function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
     setCurrent(index);
 
     const audio = audioRef.current;
-    if (audio && item.audioUrl) audio.currentTime = slides[index].start + 0.05;
+    const start = slides[index].start;
+    if (audio && item.audioUrl && Number.isFinite(start)) {
+      audio.currentTime = start + 0.05;
+    }
+  };
+
+  const readDuration = (audio: HTMLAudioElement) => {
+    if (Number.isFinite(audio.duration)) setDuration(audio.duration);
   };
 
   return (
     <figure className={styles.item}>
-      {item.title && (
-        <figcaption className={styles.itemTitle}>{item.title}</figcaption>
-      )}
-
       <div className={styles.stage} style={{ aspectRatio: ratio }}>
-        {slides.map((slide, i) => (
-          <img
-            key={slide._key}
-            className={`${styles.slide} ${i === current ? styles.slideActive : ""}`}
-            src={sized(slide.url!)}
-            alt={slide.alt ?? ""}
-            loading={i < 2 ? "eager" : "lazy"}
-            decoding="async"
-            aria-hidden={i !== current}
-          />
-        ))}
+        {slides.map((slide, i) =>
+          i <= reach ? (
+            <img
+              key={slide._key}
+              className={`${styles.slide} ${i === current ? styles.slideActive : ""}`}
+              src={sized(slide.url!)}
+              alt={slide.alt ?? ""}
+              decoding="async"
+              aria-hidden={i !== current}
+            />
+          ) : null
+        )}
       </div>
 
       <p className={styles.caption}>{slides[current].caption}</p>
@@ -229,10 +327,16 @@ function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
           controls
           preload="metadata"
           src={item.audioUrl}
+          onLoadedMetadata={(e) => readDuration(e.currentTarget)}
+          onDurationChange={(e) => readDuration(e.currentTarget)}
           onTimeUpdate={syncToAudio}
           onSeeked={syncToAudio}
           onPlay={(e) => pauseOtherAudio(e.currentTarget)}
         />
+      )}
+
+      {item.title && (
+        <figcaption className={styles.itemTitle}>{item.title}</figcaption>
       )}
 
       {item.transcript && <Transcript text={item.transcript} />}

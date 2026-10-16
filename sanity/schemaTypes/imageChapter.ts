@@ -17,7 +17,9 @@ export const imageChapter = defineType({
     defineField({
       name: "title",
       title: "Title",
-      type: "string",
+      description: "For two titles (for example, two poems), put each on its own line.",
+      type: "text",
+      rows: 2,
       validation: (Rule) => Rule.required(),
     }),
 
@@ -113,7 +115,7 @@ export const imageChapter = defineType({
             select: { title: "contributor", subtitle: "title", open: "open" },
             prepare: ({ title, subtitle, open }) => ({
               title,
-              subtitle: `${open ? "● Open" : "○ Closed"} · ${subtitle ?? ""}`,
+              subtitle: `${open ? "● Open" : "○ Closed"} · ${(subtitle ?? "").replace(/\n/g, " / ")}`,
             }),
           },
         }),
@@ -129,6 +131,13 @@ export const imageChapter = defineType({
               type: "url",
               description: "The YouTube or Vimeo link",
               validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: "poster",
+              title: "Poster image",
+              description:
+                "Optional. Shown before the video plays. For YouTube, the video's thumbnail is used if this is blank.",
+              type: "image",
             }),
           ],
           preview: {
@@ -151,7 +160,32 @@ export const imageChapter = defineType({
               validation: (Rule) => Rule.required(),
             }),
             defineField({
+              name: "images",
+              title: "Images (even timing)",
+              description:
+                "Drag all the images in at once. They advance at an even pace across the whole recording. Check the order afterwards and drag to reorder if needed.",
+              type: "array",
+              of: [
+                defineArrayMember({
+                  type: "image",
+                  fields: [
+                    defineField({ name: "alt", title: "Alt text", type: "string" }),
+                    defineField({ name: "caption", type: "string" }),
+                  ],
+                }),
+              ],
+              options: { layout: "grid" },
+            }),
+            defineField({
+              name: "slideDuration",
+              title: "Seconds per slide",
+              description: "Optional. Leave blank to spread the images evenly over the whole recording.",
+              type: "number",
+              validation: (Rule) => Rule.min(1),
+            }),
+            defineField({
               name: "slides",
+              title: "Slides (custom timing, optional)",
               type: "array",
               of: [
                 defineArrayMember({

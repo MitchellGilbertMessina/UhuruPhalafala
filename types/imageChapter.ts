@@ -18,6 +18,7 @@ export type VideoMedia = {
   _type: "video";
   title?: string;
   url?: string;
+  posterUrl?: string | null;
 };
 
 export type SlideshowMedia = {
@@ -29,6 +30,15 @@ export type SlideshowMedia = {
   slides?: {
     _key: string;
     startTime: string;
+    alt?: string;
+    caption?: string;
+    url?: string;
+    width?: number;
+    height?: number;
+  }[] | null;
+  slideDuration?: number | null;
+  images?: {
+    _key: string;
     alt?: string;
     caption?: string;
     url?: string;

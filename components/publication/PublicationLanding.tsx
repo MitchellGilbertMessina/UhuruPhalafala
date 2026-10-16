@@ -16,14 +16,17 @@ export default function PublicationLanding({
         </picture>
 
         <div className={styles.names}>
-          <img src={landing.namesSrc} alt={landing.namesAlt} />
+          <picture>
+            <source media="(max-width: 700px)" srcSet={landing.namesPortraitSrc} />
+            <img src={landing.namesSrc} alt={landing.namesAlt} />
+          </picture>
         </div>
 
         <div className={styles.about} inert={!aboutActive}>
           <div className={styles.aboutInner}>
             <p className={styles.epigraph}>{landing.epigraph}</p>
             <p>{landing.blurb}</p>
-
+            <p className={styles.framing}>{landing.framing}</p>
             <ul className={styles.links}>
               {landing.links.map((link) => (
                 <li key={link.label}>

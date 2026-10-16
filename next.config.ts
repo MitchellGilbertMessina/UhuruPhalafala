@@ -1,17 +1,26 @@
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-
   images: {
-    remotePatterns:[
+    remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'cdn.sanity.io',
-        port: '',
-      }
-    ]
-  }
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+        port: "",
+      },
+    ],
+  },
+
+  async redirects() {
+    return [
+      {
+        source: "/sonic",
+        destination: "/pralini-naidoo",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

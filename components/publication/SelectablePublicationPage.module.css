@@ -60,3 +60,11 @@ position: relative;
   -webkit-user-select: none;
   pointer-events: none;
 }
+
+.pageFrame > [data-page-image] {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}

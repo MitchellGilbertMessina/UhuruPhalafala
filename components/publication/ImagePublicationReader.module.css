@@ -1,11 +1,17 @@
 .shell {
   --p: 0;
-  --logo-space: 8rem;      /* logo height + about 2.5rem */
-  --accent: #5b21d6;       /* clickable contributions: change me */
-  --sidebar-w: clamp(17rem, 24vw, 22rem);   /* wider: tune */
+  --logo-space: 8rem;
+  /* logo height + about 2.5rem */
+  --accent: #5b21d6;
+  /* clickable contributions: change me */
+  --sidebar-w: clamp(17rem, 24vw, 22rem);
+  /* wider: tune */
 }
 
 .reader {
+  position: relative;
+  z-index: 5;
+  margin-top: -100svh;
   display: grid;
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   min-height: 100vh;
@@ -32,7 +38,7 @@
 }
 
 .logoBlack {
-  opacity: clamp(0, calc((var(--p) - 0.85) / 0.1), 1);
+  opacity: clamp(0, calc((var(--p) - 0.93) / 0.07), 1);
 }
 
 .logoWhite {
@@ -40,7 +46,7 @@
   inset: 0;
   height: 100%;
   object-fit: contain;
-  opacity: clamp(0, calc((0.95 - var(--p)) / 0.1), 1);
+  opacity: clamp(0, calc((1 - var(--p)) / 0.07), 1);
 }
 
 /* ---------- Sidebar ---------- */
@@ -52,9 +58,10 @@
   width: var(--sidebar-w);
   height: 100vh;
   font-size: 0.9rem;
-  opacity: clamp(0, calc((var(--p) - 0.8) / 0.2), 1);
+  opacity: clamp(0, calc((var(--p) - 0.9) / 0.1), 1);
 }
-.sidebar > * {
+
+.sidebar>* {
   flex-shrink: 0;
 }
 
@@ -64,27 +71,25 @@
 }
 
 .sidebarScroll {
-  --fade: 3rem;                              /* how softly text dissolves under the logo */
+  --fade: 3rem;
+  /* how softly text dissolves under the logo */
   height: 100%;
   overflow-y: auto;
-  padding: var(--logo-space) 1.25rem 3rem 1.5rem;
-  scrollbar-width: none;                     /* hide the native scrollbar */
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent calc(var(--logo-space) - var(--fade)),
-    #000 calc(var(--logo-space) - 0.25rem),
-    #000 calc(100% - 2rem),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent calc(var(--logo-space) - var(--fade)),
-    #000 calc(var(--logo-space) - 0.25rem),
-    #000 calc(100% - 2rem),
-    transparent 100%
-  );
+  padding: var(--logo-space) 1.25rem 4rem 1.5rem;
+  scrollbar-width: none;
+  /* hide the native scrollbar */
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0,
+      transparent calc(var(--logo-space) - var(--fade)),
+      #000 calc(var(--logo-space) - 0.25rem),
+      #000 calc(100% - 2rem),
+      transparent 100%);
+  mask-image: linear-gradient(to bottom,
+      transparent 0,
+      transparent calc(var(--logo-space) - var(--fade)),
+      #000 calc(var(--logo-space) - 0.25rem),
+      #000 calc(100% - 2rem),
+      transparent 100%);
 }
 
 .sidebarScroll::-webkit-scrollbar {
@@ -117,7 +122,7 @@
   display: none;
 }
 
-.desktopMenu > p {
+.desktopMenu>p {
   margin-bottom: 1rem;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
@@ -147,6 +152,7 @@
   display: block;
   font-size: 0.78rem;
   opacity: 0.8;
+  white-space: pre-line;
 }
 
 .contentsClosed {
@@ -155,7 +161,7 @@
 }
 
 .sidebar .contentsLink {
-  color: var(--accent);
+  color: #000000;
   transition: padding-left 0.2s ease;
 }
 
@@ -178,9 +184,13 @@
 }
 
 .contribution {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  /* the speed bump: each contribution fills the screen */
   max-width: 1000px;
   margin: 0 auto;
-  padding-top: 3rem;
+  padding: 3rem 0 6rem;
 }
 
 .contributionHeader {
@@ -195,24 +205,25 @@
 
 .contributionTitle {
   margin-top: 0.4rem;
-  font-size: clamp(1.5rem, 3vw, 2.5rem);
-  font-weight: 700;
-  line-height: 1.1;
+  font-size: clamp(1.15rem, 1.8vw, 1.6rem);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: pre-line;
 }
 
 .downloadLink {
   display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  vertical-align: -0.12em;
+  margin-left: 0.7rem;
   color: inherit;
-  font-size: 0.85rem;
-  text-decoration: none;
+  line-height: 0;
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
 }
 
-.downloadLink:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.downloadLink:hover,
+.downloadLink:focus-visible {
+  opacity: 1;
 }
 
 .intro {
@@ -226,7 +237,7 @@
   max-width: 38rem;
 }
 
-.intro p + p {
+.intro p+p {
   margin-top: 1rem;
 }
 
@@ -241,10 +252,45 @@
   height: auto;
 }
 
-.divider {
+.pageImage {
+  position: relative;
+}
+
+.pageImage .placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  filter: blur(6px);
+  transform: scale(1.02);
+  opacity: 0.55;
+  transition: opacity 0.5s ease;
+}
+
+.pageImage > img:not(.placeholder) {
+  position: relative;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.pageImage[data-loaded="true"] > img:not(.placeholder) {
+  opacity: 1;
+}
+
+.pageImage[data-loaded="true"] .placeholder {
+  opacity: 0;
+}
+
+.dividerWrap {
   width: 76%;
+  margin: auto auto 0;
+  /* pushes the line to the foot of the panel */
+  padding-top: 4rem;
+}
+
+.divider {
   height: 1px;
-  margin: 4rem auto 0;
   background: currentColor;
   opacity: 0.35;
 }
@@ -254,6 +300,10 @@
 }
 
 /* ---------- Phones ---------- */
+/*MOBILE*/
+/*MOBILE*/
+/*MOBILE*/
+
 @media (max-width: 700px) {
   .reader {
     display: block;
@@ -274,6 +324,16 @@
     background: #c5c0c9;
     border-bottom: 1px solid rgb(0 0 0 / 15%);
     opacity: 1;
+  }
+
+  .sidebarScroll {
+    display: contents;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .scrollDot {
+    display: none;
   }
 
   .mobileHome {
@@ -313,13 +373,14 @@
 
   .contribution {
     padding-top: 2rem;
-    scroll-margin-top: 3.5rem;   /* clears the sticky bar when jumping */
+    scroll-margin-top: 3.5rem;
+    /* clears the sticky bar when jumping */
   }
 
   .contributionHeader,
   .intro,
   .page,
-  .divider {
+  .dividerWrap {
     width: 96%;
   }
 

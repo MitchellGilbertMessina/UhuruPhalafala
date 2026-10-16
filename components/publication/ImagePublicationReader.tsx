@@ -108,8 +108,8 @@ export default function ImagePublicationReader({
       const p = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 1;
 
       shell.style.setProperty("--p", p.toFixed(4));
-      setAboutActive(p > 0.3 && p < 0.85);
-      setSidebarActive(p > 0.9);
+      setAboutActive(p > 0.3 && p < 0.62);
+      setSidebarActive(p > 0.95);
     };
 
     const onScroll = () => {
@@ -265,21 +265,19 @@ export default function ImagePublicationReader({
                     <p className={styles.contributionAuthor}>
                       {chapter.contributor}
                     </p>
-                    <h2 className={styles.contributionTitle}>{chapter.title}</h2>
-
-                    {pdfUrl && (
-                      <a
-                        className={styles.downloadLink}
-                        href={withDownload(
-                          pdfUrl,
-                          `${chapter.contributor} - Sensuous Heirlooms.pdf`
-                        )}
-                        aria-label={`Download ${chapter.contributor} as a PDF`}
-                      >
-                        <DownloadIcon />
-                        <span>Download PDF</span>
-                      </a>
-                    )}
+                    <h2 className={styles.contributionTitle}>
+                      {chapter.title}
+                      {pdfUrl && (
+                        <a
+                          className={styles.downloadLink}
+                          href={withDownload(pdfUrl, `${chapter.contributor} - Sensuous Heirlooms.pdf`)}
+                          aria-label={`Download ${chapter.contributor} as a PDF`}
+                          title="Download PDF"
+                        >
+                          <DownloadIcon />
+                        </a>
+                      )}
+                    </h2>
                   </header>
 
                   {chapter.intro && (
@@ -300,16 +298,12 @@ export default function ImagePublicationReader({
                             pdfUrl={pdfUrl}
                             pdfPageIndex={pageIndex}
                           >
-                            <Image
+                            <PageImage
                               src={page.url}
                               alt={
                                 page.alt ||
-                                `${chapter.title}, page ${page.pageNumber ?? pageIndex + 1}`
+                                `${chapter.title.replace(/\s*\n\s*/g, " / ")}, page ${page.pageNumber ?? pageIndex + 1}`
                               }
-                              width={1772}
-                              height={2421}
-                              unoptimized
-                              draggable={false}
                               sizes="(max-width: 700px) 96vw, 70vw"
                             />
                           </SelectablePublicationPage>
@@ -319,7 +313,9 @@ export default function ImagePublicationReader({
                   )}
 
                   {index < openChapters.length - 1 && (
-                    <div className={styles.divider} role="separator" />
+                    <div className={styles.dividerWrap}>
+                      <div className={styles.divider} role="separator" />
+                    </div>
                   )}
                 </article>
               </Fragment>
@@ -411,5 +407,49 @@ function ContentsList({
         })}
       </ul>
     </nav>
+  );
+}
+
+const tinyUrl = (url: string) => `${url}?w=32&q=40&auto=format`;
+
+function PageImage({
+  src,
+  alt,
+  sizes,
+}: {
+  src: string;
+  alt: string;
+  sizes: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Covers images that finished loading before hydration.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth > 0) setLoaded(true);
+  }, []);
+
+  return (
+    <div className={styles.pageImage} data-page-image data-loaded={loaded}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        className={styles.placeholder}
+        src={tinyUrl(src)}
+        alt=""
+        aria-hidden="true"
+      />
+      <Image
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        width={1772}
+        height={2421}
+        unoptimized
+        draggable={false}
+        sizes={sizes}
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
   );
 }
