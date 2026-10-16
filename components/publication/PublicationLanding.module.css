@@ -13,14 +13,26 @@
 }
 
 /* Background: fades out at the very end (p 0.8 → 1) */
-.bg,
+
+.bg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .bg img {
   position: absolute;
   inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
-.bg img { object-fit: cover; }
 
 
 /* Names: visible at the start, gone by p 0.3, drifting up slightly */
@@ -116,4 +128,8 @@
   .links {
     margin-top: 1.25rem;
   }
+
+  .landing {
+  height: 200vh;
+}
 }
