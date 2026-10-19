@@ -3,6 +3,7 @@
 import type { MouseEvent } from "react";
 import { landing } from "@/content/sensuousHeirloomsLanding";
 import styles from "./PublicationLanding.module.css";
+import { FaInstagram, FaYoutube, FaEnvelope } from "react-icons/fa";
 
 type Props = {
   aboutActive: boolean;
@@ -22,6 +23,12 @@ export default function PublicationLanding({
     // Tapping anywhere else advances to the next landing state.
     onAdvance();
   };
+
+  const linkIcons = {
+  Instagram: FaInstagram,
+  YouTube: FaYoutube,
+  Email: FaEnvelope,
+};
 
   const handleAboutClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
@@ -77,21 +84,23 @@ export default function PublicationLanding({
             <p className={styles.framing}>{landing.framing}</p>
 
             <ul className={styles.links}>
-              {landing.links.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target={
-                      link.href.startsWith("mailto:")
-                        ? undefined
-                        : "_blank"
-                    }
-                    rel="noreferrer"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+              {landing.links.map((link) => {
+                const Icon = linkIcons[link.label as keyof typeof linkIcons];
+
+                return (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      target={link.href.startsWith("mailto:") ? undefined : "_blank"}
+                      rel={link.href.startsWith("mailto:") ? undefined : undefined}
+                      aria-label={link.label}
+                      title={link.label}
+                    >
+                      <Icon aria-hidden="true" size={28} />
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>
