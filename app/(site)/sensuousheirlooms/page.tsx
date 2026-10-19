@@ -1,7 +1,10 @@
+
 import type { Metadata } from "next";
 import { getImageChapters } from "@/sanity/sanity-utils";
 import ImagePublicationReader from "@/components/publication/ImagePublicationReader";
+
 export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: "Sensuous Heirlooms",
   description: "Sensuous Heirlooms Edited by Uhuru Portia Phalafala",
