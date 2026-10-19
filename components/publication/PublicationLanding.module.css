@@ -8,7 +8,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  height: 100svh;
+  height: 100lvh;      /* stays put when the mobile browser bar collapses */
   overflow: hidden;
 }
 
@@ -38,12 +38,15 @@
 /* Names: visible at the start, gone by p 0.3, drifting up slightly */
 .names {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto 0;
+  height: 100vh;
+  height: 100svh;
   display: grid;
   place-items: center;
   pointer-events: none;
-  opacity: clamp(0, calc((0.22 - var(--p)) / 0.18), 1);
-  transform: translateY(calc(var(--p) * -48px));
+  will-change: opacity, transform;
+  opacity: clamp(0, calc((0.33 - var(--q)) / 0.27), 1);
+  transform: translateY(calc(var(--q) * -32px));
 }
 .names picture {
   display: contents;
@@ -67,7 +70,14 @@
 /* Blurb + links: in at p 0.25–0.45, out at p 0.7–0.85 */
 .about {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto 0;
+  height: 100vh;
+  height: 100svh;
+  will-change: opacity;
+  opacity: min(
+    clamp(0, calc((var(--q) - 0.3) / 0.21), 1),
+    clamp(0, calc((1 - var(--q)) / 0.13), 1)
+  );
   display: grid;
   place-items: center;
   padding: 6rem 1.5rem 3rem;
@@ -78,10 +88,6 @@
     rgb(20 15 25 / 0) 100%
   );
   text-shadow: 0 1px 14px rgb(0 0 0 / 0.35);
-  opacity: min(
-    clamp(0, calc((var(--p) - 0.2) / 0.14), 1),
-    clamp(0, calc((0.68 - var(--p)) / 0.1), 1)
-  );
 
 }
 
@@ -129,7 +135,7 @@
     margin-top: 1.25rem;
   }
 
-  .landing {
-  height: 200vh;
+ .landing {
+  height: 260vh;
 }
 }

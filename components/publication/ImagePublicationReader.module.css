@@ -1,17 +1,20 @@
 .shell {
   --p: 0;
+  --q: 0; 
   --logo-space: 8rem;
   /* logo height + about 2.5rem */
   --accent: #5b21d6;
   /* clickable contributions: change me */
   --sidebar-w: clamp(17rem, 24vw, 22rem);
   /* wider: tune */
+  --bar-h: 4.6rem;
 }
 
 .reader {
   position: relative;
   z-index: 5;
-  margin-top: -100svh;
+  margin-top: -100vh;
+  margin-top: -100lvh;
   display: grid;
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   min-height: 100vh;
@@ -304,23 +307,25 @@
 /*MOBILE*/
 /*MOBILE*/
 
+/* ---------- Phones ---------- */
 @media (max-width: 700px) {
   .reader {
     display: block;
   }
 
+  /* The sidebar becomes a top bar: logo (fixed, left) + Contents (right) */
   .sidebar {
     position: sticky;
     top: 0;
     z-index: 20;
-    flex-direction: row;
-    flex-wrap: wrap;
+    display: flex;
+    justify-content: flex-end;
     align-items: center;
-    gap: 0.5rem 1rem;
     width: auto;
     height: auto;
+    min-height: var(--bar-h);
     overflow: visible;
-    padding: 0.6rem 0.75rem;
+    padding: 0.5rem 0.9rem;
     background: #c5c0c9;
     border-bottom: 1px solid rgb(0 0 0 / 15%);
     opacity: 1;
@@ -332,32 +337,27 @@
     mask-image: none;
   }
 
-  .scrollDot {
-    display: none;
-  }
-
-  .mobileHome {
-    display: inline;
-  }
-
+  .scrollDot,
+  .mobileHome,
   .desktopMenu {
     display: none;
   }
 
   .mobileMenu {
     display: block;
-    position: relative;
-    margin: 0 0 0 auto;
+    position: static;            /* so the dropdown anchors to the bar */
+    margin: 0;
   }
 
   .mobileMenu summary {
+    padding: 0.4rem 0;
     cursor: pointer;
   }
 
   .mobileMenu .contentsNav {
     position: absolute;
-    top: calc(100% + 0.6rem);
-    right: 0;
+    top: calc(100% + 0.25rem);
+    right: 0.9rem;
     z-index: 30;
     width: 16rem;
     max-height: 70vh;
@@ -373,8 +373,7 @@
 
   .contribution {
     padding-top: 2rem;
-    scroll-margin-top: 3.5rem;
-    /* clears the sticky bar when jumping */
+    scroll-margin-top: calc(var(--bar-h) + 0.5rem);   /* clears the sticky bar when jumping */
   }
 
   .contributionHeader,
@@ -385,11 +384,8 @@
   }
 
   .logo {
-    width: 6.5rem;
-  }
-
-  .logo[data-after-landing="true"] {
-    opacity: 0;
-    pointer-events: none;
+    top: 0.6rem;
+    left: 0.9rem;
+    width: 6rem;
   }
 }

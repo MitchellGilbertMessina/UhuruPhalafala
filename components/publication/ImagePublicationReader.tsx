@@ -21,6 +21,55 @@ const LANDING_KEY = "landing";
 
 const withDownload = (url: string, filename: string) =>
   `${url}${url.includes("?") ? "&" : "?"}dl=${encodeURIComponent(filename)}`;
+let scrollAnimation = 0;
+
+// A short, fixed-duration scroll. Faster and more consistent than behavior: "smooth", especially on iOS.
+function animateScrollTo(targetY: number, duration = 450) {
+  const startY = window.scrollY;
+  const delta = targetY - startY;
+  const token = ++scrollAnimation;
+
+  if (
+    Math.abs(delta) < 2 ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    window.scrollTo(0, targetY);
+    return;
+  }
+
+  const startTime = performance.now();
+
+  const step = (now: number) => {
+    if (token !== scrollAnimation) return; // cancelled or superseded
+    const t = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    window.scrollTo(0, startY + delta * eased);
+    if (t < 1) requestAnimationFrame(step);
+  };
+
+  requestAnimationFrame(step);
+}
+
+function measureLanding(readerEl: HTMLElement | null) {
+  const landing = document.getElementById("landing");
+  const stage = (landing?.firstElementChild ?? null) as HTMLElement | null;
+  if (!landing || !stage || !readerEl) return null;
+
+  const total = landing.offsetHeight - stage.offsetHeight;
+  if (total <= 0) return null;
+
+  // How far the reader overlaps the landing (the curtain).
+  const overlap =
+    -parseFloat(getComputedStyle(readerEl).marginTop) || stage.offsetHeight;
+
+  const progress = Math.min(
+    1,
+    Math.max(0, -landing.getBoundingClientRect().top / total)
+  );
+  const curtainStart = Math.min(0.95, Math.max(0.05, (total - overlap) / total));
+
+  return { landing, total, progress, curtainStart };
+}
 
 export default function ImagePublicationReader({
   chapters,
@@ -39,6 +88,8 @@ export default function ImagePublicationReader({
   const menuRef = useRef<HTMLDetailsElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
+  const readerRef = useRef<HTMLElement>(null);
+  const logoRef = useRef<HTMLAnchorElement>(null);
 
   const openChapters = useMemo(
     () => chapters.filter(isOpenChapter),
@@ -112,84 +163,63 @@ export default function ImagePublicationReader({
   }, [chapters]);
 
   // Landing scroll progress: writes --p (0 → 1) onto the shell element.
+  // --p: 0 → 1 across the whole landing (logo + sidebar).
+  // --q: 0 → 1 before the curtain rises (names + description).
   useEffect(() => {
-    const shell = shellRef.current;
     const landing = document.getElementById("landing");
+    if (!landing) return;
 
-    if (!shell || !landing) return;
+    const targets = [landing, logoRef.current, sidebarRef.current].filter(
+      (el): el is HTMLElement => el !== null
+    );
 
     let frame = 0;
+    let lastProgress = -1;
 
     const update = () => {
       frame = 0;
 
-      const rect = landing.getBoundingClientRect();
-      const stage = landing.firstElementChild as HTMLElement | null;
+      const m = measureLanding(readerRef.current);
+      if (!m || m.progress === lastProgress) return;
 
-      if (!stage) return;
+      lastProgress = m.progress;
+      const q = Math.min(1, m.progress / m.curtainStart);
 
-      const total = landing.offsetHeight - stage.offsetHeight;
+      targets.forEach((el) => {
+        el.style.setProperty("--p", m.progress.toFixed(4));
+        el.style.setProperty("--q", q.toFixed(4));
+      });
 
-      const progress =
-        total > 0
-          ? Math.min(1, Math.max(0, -rect.top / total))
-          : 1;
-
-      shell.style.setProperty("--p", progress.toFixed(4));
-
-      setAboutActive(progress > 0.3 && progress < 0.62);
-      setSidebarActive(progress > 0.95);
+      setAboutActive(q > 0.45 && q < 0.9);
+      setSidebarActive(m.progress > 0.95);
     };
 
     const onScroll = () => {
-      if (!frame) {
-        frame = requestAnimationFrame(update);
-      }
+      if (!frame) frame = requestAnimationFrame(update);
     };
 
     update();
-
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
 
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
-
       if (frame) cancelAnimationFrame(frame);
     };
   }, []);
 
   // Advance the landing when the user taps the names, description, or background.
   const advanceLanding = () => {
-    const landing = document.getElementById("landing");
-    if (!landing) return;
+    const m = measureLanding(readerRef.current);
+    if (!m) return;
 
-    const stage = landing.firstElementChild as HTMLElement | null;
-    if (!stage) return;
+    // First tap: names → description. Second tap: description → publication.
+    const q = m.progress / m.curtainStart;
+    const target = q < 0.45 ? m.curtainStart * 0.7 : 1;
+    const top = window.scrollY + m.landing.getBoundingClientRect().top;
 
-    const rect = landing.getBoundingClientRect();
-    const total = landing.offsetHeight - stage.offsetHeight;
-
-    if (total <= 0) return;
-
-    const currentProgress = Math.min(
-      1,
-      Math.max(0, -rect.top / total)
-    );
-
-    // First tap: names → description.
-    // Second tap: description → publication.
-    const targetProgress = currentProgress < 0.3 ? 0.42 : 1;
-
-    const targetY = window.scrollY + rect.top + total * targetProgress;
-
-    window.scrollTo({
-      top: Math.max(0, targetY),
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-    });
+    animateScrollTo(top + m.total * target);
   };
 
   // Subtle scroll indicator: a dot that tracks the sidebar's scroll position.
@@ -258,6 +288,22 @@ export default function ImagePublicationReader({
     }
   }, [activeSlug]);
 
+  useEffect(() => {
+    const cancel = () => {
+      scrollAnimation += 1;
+    };
+
+    window.addEventListener("touchstart", cancel, { passive: true });
+    window.addEventListener("wheel", cancel, { passive: true });
+    window.addEventListener("keydown", cancel);
+
+    return () => {
+      window.removeEventListener("touchstart", cancel);
+      window.removeEventListener("wheel", cancel);
+      window.removeEventListener("keydown", cancel);
+    };
+  }, []);
+
   const jumpToChapter = (slug: string) => {
     if (menuRef.current) {
       menuRef.current.open = false;
@@ -291,9 +337,12 @@ export default function ImagePublicationReader({
     <div
       ref={shellRef}
       className={styles.shell}
-      style={{ "--p": startsPastLanding ? 1 : 0 } as CSSProperties}
+      style={{
+        "--p": startsPastLanding ? 1 : 0,
+        "--q": startsPastLanding ? 1 : 0,
+      } as CSSProperties}
     >
-      <Link
+      <Link ref={logoRef}
         href="/sensuousheirlooms"
         className={styles.logo}
         data-after-landing={sidebarActive}
@@ -320,7 +369,7 @@ export default function ImagePublicationReader({
         onAdvance={advanceLanding}
       />
 
-      <main className={styles.reader}>
+      <main ref={readerRef} className={styles.reader}>
         <aside
           ref={sidebarRef}
           className={styles.sidebar}
@@ -397,12 +446,18 @@ export default function ImagePublicationReader({
                           )}
                           aria-label={`Download ${chapter.contributor} as a PDF`}
                           title="Download PDF"
+
                         >
                           <DownloadIcon />
                         </a>
+
+
                       )}
                     </h2>
+
                   </header>
+
+
 
                   {chapter.intro && (
                     <div className={styles.intro}>
@@ -431,8 +486,7 @@ export default function ImagePublicationReader({
                               src={page.url}
                               alt={
                                 page.alt ||
-                                `${chapter.title.replace(/\s*\n\s*/g, " / ")}, page ${
-                                  page.pageNumber ?? pageIndex + 1
+                                `${chapter.title.replace(/\s*\n\s*/g, " / ")}, page ${page.pageNumber ?? pageIndex + 1
                                 }`
                               }
                               sizes="(max-width: 700px) 96vw, 70vw"
