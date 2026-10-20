@@ -1,0 +1,593 @@
+From ae8af5bbfa044b59b3d4b1987660b587d379d320 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 20 Oct 2026 18:51:57 +0200
+Subject: [PATCH] Serve Sensuous Heirlooms at sensuousheirlooms.com/<slug>; fix
+ mobile slideshow
+
+URLs
+- On sensuousheirlooms.com, /<slug> is now the address of each
+  contribution (middleware rewrites to the internal
+  /sensuousheirlooms-domain route). Old /sensuousheirlooms/<slug> links
+  308-redirect to /<slug>.
+- uhuruphalafala.com/sensuousheirlooms/... redirects to the custom domain.
+- /sonic now goes to /pralini-naidoo on the custom domain.
+- The reader takes a basePath, so its links and address-bar updates match
+  the domain; localhost:3000/sensuousheirlooms still works for development.
+- Each contribution gets its own title, description and canonical URL.
+
+Slideshow
+- Keep only the outgoing, current and next slide in the page (and prefetch
+  the one after). Previously every slide reached stayed decoded at
+  1600px, which runs phones out of memory on long slideshows.
+- Serve 800/1200/1600px versions via srcset so phones download less.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01RgKyNCjtk3xGkMWVui3gXs
+---
+ .../sensuousheirlooms-domain/[slug]/page.tsx  | 15 ++++
+ app/(site)/sensuousheirlooms-domain/page.tsx  |  9 ++
+ app/(site)/sensuousheirlooms/[slug]/page.tsx  | 29 +++----
+ app/(site)/sensuousheirlooms/page.tsx         | 28 ++-----
+ components/navigation/Navigation.tsx          |  2 +-
+ components/publication/ChapterMedia.tsx       | 39 +++++++--
+ .../publication/ImagePublicationReader.tsx    | 21 +++--
+ components/publication/heirloomsRoutes.tsx    | 83 +++++++++++++++++++
+ lib/homeSections.ts                           |  2 +-
+ lib/sensuousHeirlooms.ts                      | 15 ++++
+ middleware.ts                                 | 34 +++++---
+ next.config.ts                                | 40 ++++++++-
+ 12 files changed, 248 insertions(+), 69 deletions(-)
+ create mode 100644 app/(site)/sensuousheirlooms-domain/[slug]/page.tsx
+ create mode 100644 app/(site)/sensuousheirlooms-domain/page.tsx
+ create mode 100644 components/publication/heirloomsRoutes.tsx
+ create mode 100644 lib/sensuousHeirlooms.ts
+
+diff --git a/app/(site)/sensuousheirlooms-domain/[slug]/page.tsx b/app/(site)/sensuousheirlooms-domain/[slug]/page.tsx
+new file mode 100644
+index 0000000..9dec1f8
+--- /dev/null
++++ b/app/(site)/sensuousheirlooms-domain/[slug]/page.tsx
+@@ -0,0 +1,15 @@
++// www.sensuousheirlooms.com/<slug> (middleware.ts rewrites those URLs here)
++import { ChapterPage, chapterMetadata } from "@/components/publication/heirloomsRoutes";
++
++export const revalidate = 60;
++
++type Props = { params: Promise<{ slug: string }> };
++
++export async function generateMetadata({ params }: Props) {
++  return chapterMetadata((await params).slug);
++}
++
++export default async function Page({ params }: Props) {
++  const { slug } = await params;
++  return <ChapterPage slug={slug} basePath="" />;
++}
+diff --git a/app/(site)/sensuousheirlooms-domain/page.tsx b/app/(site)/sensuousheirlooms-domain/page.tsx
+new file mode 100644
+index 0000000..68f5ade
+--- /dev/null
++++ b/app/(site)/sensuousheirlooms-domain/page.tsx
+@@ -0,0 +1,9 @@
++// www.sensuousheirlooms.com/ (middleware.ts rewrites the domain root here)
++import { LandingPage, landingMetadata } from "@/components/publication/heirloomsRoutes";
++
++export const revalidate = 60;
++export const metadata = landingMetadata;
++
++export default function Page() {
++  return <LandingPage basePath="" />;
++}
+diff --git a/app/(site)/sensuousheirlooms/[slug]/page.tsx b/app/(site)/sensuousheirlooms/[slug]/page.tsx
+index 5f550a7..a7d4a3f 100644
+--- a/app/(site)/sensuousheirlooms/[slug]/page.tsx
++++ b/app/(site)/sensuousheirlooms/[slug]/page.tsx
+@@ -1,20 +1,15 @@
+-import { redirect } from "next/navigation";
+-import { getImageChapters } from "@/sanity/sanity-utils";
+-import { isOpenChapter } from "@/types/imageChapter";
+-import ImagePublicationReader from "@/components/publication/ImagePublicationReader";
++// localhost:3000/sensuousheirlooms/<slug> (on the live domain this redirects to /<slug>)
++import { ChapterPage, chapterMetadata } from "@/components/publication/heirloomsRoutes";
+ 
+-export default async function ImageChapterPage({
+-  params,
+-}: {
+-  params: Promise<{ slug: string }>;
+-}) {
+-  const { slug } = await params;
+-  const chapters = await getImageChapters();
+-  const chapter = chapters.find((item) => item.slug === slug);
++export const revalidate = 60;
++
++type Props = { params: Promise<{ slug: string }> };
+ 
+-  if (!chapter || !isOpenChapter(chapter)) {
+-    redirect("/sensuousheirlooms");
+-  }
++export async function generateMetadata({ params }: Props) {
++  return chapterMetadata((await params).slug);
++}
+ 
+-  return <ImagePublicationReader chapters={chapters} initialSlug={slug} />;
+-}
+\ No newline at end of file
++export default async function Page({ params }: Props) {
++  const { slug } = await params;
++  return <ChapterPage slug={slug} basePath="/sensuousheirlooms" />;
++}
+diff --git a/app/(site)/sensuousheirlooms/page.tsx b/app/(site)/sensuousheirlooms/page.tsx
+index 91c8914..9871cf3 100644
+--- a/app/(site)/sensuousheirlooms/page.tsx
++++ b/app/(site)/sensuousheirlooms/page.tsx
+@@ -1,27 +1,9 @@
+-
+-import type { Metadata } from "next";
+-import { getImageChapters } from "@/sanity/sanity-utils";
+-import ImagePublicationReader from "@/components/publication/ImagePublicationReader";
++// localhost:3000/sensuousheirlooms (on the live domain this redirects to /)
++import { LandingPage, landingMetadata } from "@/components/publication/heirloomsRoutes";
+ 
+ export const revalidate = 60;
++export const metadata = landingMetadata;
+ 
+-export const metadata: Metadata = {
+-  title: "Sensuous Heirlooms",
+-  description: "Sensuous Heirlooms Edited by Uhuru Portia Phalafala",
+-  alternates: {
+-    canonical: "https://sensuousheirlooms.com/",
+-  },
+-  openGraph: {
+-    title: "Sensuous Heirlooms",
+-    description: "Sensuous Heirlooms Edited by Uhuru Portia Phalafala",
+-    url: "https://sensuousheirlooms.com/",
+-    siteName: "Sensuous Heirlooms",
+-    type: "website",
+-  },
+-};
+-
+-export default async function HeirloomsPage() {
+-  const chapters = await getImageChapters();
+-
+-  return <ImagePublicationReader chapters={chapters} initialSlug={null} />;
++export default function Page() {
++  return <LandingPage basePath="/sensuousheirlooms" />;
+ }
+diff --git a/components/navigation/Navigation.tsx b/components/navigation/Navigation.tsx
+index dd6d6dd..c815c2f 100644
+--- a/components/navigation/Navigation.tsx
++++ b/components/navigation/Navigation.tsx
+@@ -17,7 +17,7 @@ const sections = [
+   },
+   {
+     title: "Sensuous Heirlooms",
+-    href: "https://sensuousheirlooms.com",
++    href: "https://www.sensuousheirlooms.com",
+     external: true,
+   },
+ ];
+diff --git a/components/publication/ChapterMedia.tsx b/components/publication/ChapterMedia.tsx
+index 0623b09..7a03a86 100644
+--- a/components/publication/ChapterMedia.tsx
++++ b/components/publication/ChapterMedia.tsx
+@@ -34,6 +34,13 @@ function sized(url: string, width = 1600) {
+     : url;
+ }
+ 
++// Let phones download a smaller slide than desktops.
++const SLIDE_SIZES = "(max-width: 700px) 96vw, 70vw";
++
++function slideSrcSet(url: string) {
++  return [800, 1200, 1600].map((w) => `${sized(url, w)} ${w}w`).join(", ");
++}
++
+ type ParsedVideo = {
+   provider: "youtube" | "vimeo";
+   id: string;
+@@ -200,7 +207,8 @@ type Slide = {
+ function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
+   const audioRef = useRef<HTMLAudioElement>(null);
+   const [current, setCurrent] = useState(0);
+-  const [reach, setReach] = useState(3); // how many slides are loaded ahead
++  // The slide we just left, kept in the page so it can fade out.
++  const [previous, setPrevious] = useState<number | null>(null);
+   const [duration, setDuration] = useState(0);
+ 
+   const slides = useMemo<Slide[]>(() => {
+@@ -237,10 +245,25 @@ function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
+     }));
+   }, [item.slides, item.images, item.slideDuration, duration]);
+ 
+-  // Keep loading a few slides ahead of whichever one is showing.
++  // Only a few slides live in the page at once (the one fading out, the
++  // current one and the next). Keeping every slide decoded runs phones out of
++  // memory and Safari reloads or crashes the tab. The slide after next is
++  // fetched into the browser cache so it still appears without a delay.
+   useEffect(() => {
+-    setReach((r) => Math.max(r, current + 3));
+-  }, [current]);
++    const upcoming = slides[current + 2];
++    if (!upcoming?.url) return;
++
++    const img = new Image();
++    img.sizes = SLIDE_SIZES;
++    img.srcset = slideSrcSet(upcoming.url);
++    img.src = sized(upcoming.url);
++  }, [current, slides]);
++
++  const show = (index: number) => {
++    if (index === current) return;
++    setPrevious(current);
++    setCurrent(index);
++  };
+ 
+   if (!slides.length) return null;
+ 
+@@ -258,13 +281,13 @@ function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
+       if (slides[i].start <= audio.currentTime) index = i;
+       else break;
+     }
+-    setCurrent(index);
++    show(index);
+   };
+ 
+   // Navigating the slides moves the recording to that slide's moment.
+   const go = (target: number) => {
+     const index = Math.max(0, Math.min(slides.length - 1, target));
+-    setCurrent(index);
++    show(index);
+ 
+     const audio = audioRef.current;
+     const start = slides[index].start;
+@@ -281,11 +304,13 @@ function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
+     <figure className={styles.item}>
+       <div className={styles.stage} style={{ aspectRatio: ratio }}>
+         {slides.map((slide, i) =>
+-          i <= reach ? (
++          i === previous || i === current || i === current + 1 ? (
+             <img
+               key={slide._key}
+               className={`${styles.slide} ${i === current ? styles.slideActive : ""}`}
+               src={sized(slide.url!)}
++              srcSet={slideSrcSet(slide.url!)}
++              sizes={SLIDE_SIZES}
+               alt={slide.alt ?? ""}
+               decoding="async"
+               aria-hidden={i !== current}
+diff --git a/components/publication/ImagePublicationReader.tsx b/components/publication/ImagePublicationReader.tsx
+index 007e62d..34dd800 100644
+--- a/components/publication/ImagePublicationReader.tsx
++++ b/components/publication/ImagePublicationReader.tsx
+@@ -15,6 +15,8 @@ import styles from "./ImagePublicationReader.module.css";
+ type Props = {
+   chapters: ImageChapter[];
+   initialSlug: string | null;
++  // "" on www.sensuousheirlooms.com, "/sensuousheirlooms" in local development.
++  basePath: string;
+ };
+ 
+ const LANDING_KEY = "landing";
+@@ -74,7 +76,10 @@ function measureLanding(readerEl: HTMLElement | null) {
+ export default function ImagePublicationReader({
+   chapters,
+   initialSlug,
++  basePath,
+ }: Props) {
++  const homePath = basePath || "/";
++
+   const startsPastLanding = initialSlug !== null;
+ 
+   const [activeKey, setActiveKey] = useState<string>(
+@@ -118,9 +123,7 @@ export default function ImagePublicationReader({
+   useEffect(() => {
+     if (!initialScrollDone.current) return;
+ 
+-    const expectedPath = onLanding
+-      ? "/sensuousheirlooms"
+-      : `/sensuousheirlooms/${activeKey}`;
++    const expectedPath = onLanding ? homePath : `${basePath}/${activeKey}`;
+ 
+     if (window.location.pathname !== expectedPath) {
+       window.history.replaceState(
+@@ -129,7 +132,7 @@ export default function ImagePublicationReader({
+         expectedPath
+       );
+     }
+-  }, [activeKey, onLanding]);
++  }, [activeKey, onLanding, basePath, homePath]);
+ 
+   // Work out which section sits near the top of the viewport.
+   useEffect(() => {
+@@ -343,7 +346,7 @@ export default function ImagePublicationReader({
+       } as CSSProperties}
+     >
+       <Link ref={logoRef}
+-        href="/sensuousheirlooms"
++        href={homePath}
+         className={styles.logo}
+         data-after-landing={sidebarActive}
+         onClick={goHome}
+@@ -380,7 +383,7 @@ export default function ImagePublicationReader({
+             className={styles.sidebarScroll}
+           >
+             <Link
+-              href="/sensuousheirlooms"
++              href={homePath}
+               className={styles.mobileHome}
+               onClick={goHome}
+             >
+@@ -396,6 +399,7 @@ export default function ImagePublicationReader({
+               <ContentsList
+                 chapters={chapters}
+                 activeSlug={activeSlug}
++                basePath={basePath}
+                 onJump={jumpToChapter}
+               />
+             </details>
+@@ -406,6 +410,7 @@ export default function ImagePublicationReader({
+               <ContentsList
+                 chapters={chapters}
+                 activeSlug={activeSlug}
++                basePath={basePath}
+                 onJump={jumpToChapter}
+               />
+             </div>
+@@ -554,10 +559,12 @@ function DownloadIcon() {
+ function ContentsList({
+   chapters,
+   activeSlug,
++  basePath,
+   onJump,
+ }: {
+   chapters: ImageChapter[];
+   activeSlug: string | null;
++  basePath: string;
+   onJump: (slug: string) => void;
+ }) {
+   return (
+@@ -580,7 +587,7 @@ function ContentsList({
+             <li key={chapter._id}>
+               {isOpenChapter(chapter) ? (
+                 <Link
+-                  href={`/sensuousheirlooms/${chapter.slug}`}
++                  href={`${basePath}/${chapter.slug}`}
+                   data-slug={chapter.slug}
+                   className={styles.contentsLink}
+                   aria-current={
+diff --git a/components/publication/heirloomsRoutes.tsx b/components/publication/heirloomsRoutes.tsx
+new file mode 100644
+index 0000000..43f307c
+--- /dev/null
++++ b/components/publication/heirloomsRoutes.tsx
+@@ -0,0 +1,83 @@
++// Shared by the two sets of Sensuous Heirlooms routes:
++//   app/(site)/sensuousheirlooms-domain  -> www.sensuousheirlooms.com/<slug>  (basePath "")
++//   app/(site)/sensuousheirlooms         -> localhost:3000/sensuousheirlooms/<slug>
++import { cache } from "react";
++import type { Metadata } from "next";
++import { redirect } from "next/navigation";
++import { getImageChapters } from "@/sanity/sanity-utils";
++import { isOpenChapter } from "@/types/imageChapter";
++import { SH_ORIGIN } from "@/lib/sensuousHeirlooms";
++import ImagePublicationReader from "@/components/publication/ImagePublicationReader";
++
++const SITE_NAME = "Sensuous Heirlooms";
++const DESCRIPTION = "Sensuous Heirlooms Edited by Uhuru Portia Phalafala";
++
++// Metadata and the page share one Sanity request per render.
++const getChapters = cache(getImageChapters);
++
++export const landingMetadata: Metadata = {
++  title: SITE_NAME,
++  description: DESCRIPTION,
++  alternates: { canonical: `${SH_ORIGIN}/` },
++  openGraph: {
++    title: SITE_NAME,
++    description: DESCRIPTION,
++    url: `${SH_ORIGIN}/`,
++    siteName: SITE_NAME,
++    type: "website",
++  },
++};
++
++export async function LandingPage({ basePath }: { basePath: string }) {
++  const chapters = await getChapters();
++
++  return (
++    <ImagePublicationReader
++      chapters={chapters}
++      initialSlug={null}
++      basePath={basePath}
++    />
++  );
++}
++
++export async function chapterMetadata(slug: string): Promise<Metadata> {
++  const chapters = await getChapters();
++  const chapter = chapters.find((item) => item.slug === slug);
++
++  if (!chapter) return landingMetadata;
++
++  const heading = `${chapter.contributor}, ${chapter.title.replace(/\s*\n\s*/g, " / ")}`;
++  const title = `${heading} · ${SITE_NAME}`;
++  const description = chapter.intro?.split(/\n{2,}/)[0]?.slice(0, 200) || DESCRIPTION;
++  const url = `${SH_ORIGIN}/${slug}`;
++
++  return {
++    title,
++    description,
++    alternates: { canonical: url },
++    openGraph: { title, description, url, siteName: SITE_NAME, type: "article" },
++  };
++}
++
++export async function ChapterPage({
++  slug,
++  basePath,
++}: {
++  slug: string;
++  basePath: string;
++}) {
++  const chapters = await getChapters();
++  const chapter = chapters.find((item) => item.slug === slug);
++
++  if (!chapter || !isOpenChapter(chapter)) {
++    redirect(basePath || "/");
++  }
++
++  return (
++    <ImagePublicationReader
++      chapters={chapters}
++      initialSlug={slug}
++      basePath={basePath}
++    />
++  );
++}
+diff --git a/lib/homeSections.ts b/lib/homeSections.ts
+index f0cd42b..2bc1fa9 100644
+--- a/lib/homeSections.ts
++++ b/lib/homeSections.ts
+@@ -47,7 +47,7 @@ export const homeSections: HomeSection[] = [
+ 
+     {
+         title: "Sensuous Heirlooms",
+-        href: "/sensuousheirlooms",
++        href: "https://www.sensuousheirlooms.com",
+         colour: "#C0BCC6",
+         hoverColour: "#e9e5d0",
+         preview: {
+diff --git a/lib/sensuousHeirlooms.ts b/lib/sensuousHeirlooms.ts
+new file mode 100644
+index 0000000..06dd1fd
+--- /dev/null
++++ b/lib/sensuousHeirlooms.ts
+@@ -0,0 +1,15 @@
++// Sensuous Heirlooms lives on its own domain at the root
++// (www.sensuousheirlooms.com/<slug>). On that domain, middleware.ts quietly
++// serves those URLs from the internal SH_DOMAIN_ROUTE pages. The
++// /sensuousheirlooms/<slug> pages are kept for local development.
++
++export const SH_ORIGIN = "https://www.sensuousheirlooms.com";
++
++// Matches sensuousheirlooms.com and www.sensuousheirlooms.com.
++export const SH_HOST_PATTERN = "(www\\.)?sensuousheirlooms\\.com";
++
++export const SH_DOMAIN_ROUTE = "/sensuousheirlooms-domain";
++
++export function isSensuousHeirloomsHost(host: string | null | undefined) {
++  return new RegExp(`^${SH_HOST_PATTERN}$`).test(host ?? "");
++}
+diff --git a/middleware.ts b/middleware.ts
+index 806703e..6ba6b22 100644
+--- a/middleware.ts
++++ b/middleware.ts
+@@ -1,22 +1,34 @@
+ import { NextRequest, NextResponse } from "next/server";
++import { SH_DOMAIN_ROUTE, isSensuousHeirloomsHost } from "@/lib/sensuousHeirlooms";
+ 
++// On sensuousheirlooms.com the publication sits at the root:
++//   /            -> SH_DOMAIN_ROUTE
++//   /<slug>      -> SH_DOMAIN_ROUTE/<slug>
++// The address bar keeps the short URL. Old /sensuousheirlooms/... links are
++// redirected to the short URLs in next.config.ts, which runs before this.
+ export function middleware(request: NextRequest) {
+   const hostname = request.headers.get("host")?.split(":")[0];
+ 
+-  if (
+-    (hostname === "sensuousheirlooms.com" ||
+-      hostname === "www.sensuousheirlooms.com") &&
+-    request.nextUrl.pathname === "/"
+-  ) {
+-    const url = request.nextUrl.clone();
+-    url.pathname = "/sensuousheirlooms";
++  if (!isSensuousHeirloomsHost(hostname)) {
++    return NextResponse.next();
++  }
++
++  const { pathname } = request.nextUrl;
++  const segments = pathname.split("/").filter(Boolean);
+ 
+-    return NextResponse.rewrite(url);
++  // Deeper paths (none exist on this domain) fall through to a normal 404.
++  if (segments.length > 1) {
++    return NextResponse.next();
+   }
+ 
+-  return NextResponse.next();
++  const url = request.nextUrl.clone();
++  url.pathname = segments.length ? `${SH_DOMAIN_ROUTE}/${segments[0]}` : SH_DOMAIN_ROUTE;
++
++  return NextResponse.rewrite(url);
+ }
+ 
+ export const config = {
+-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+-};
+\ No newline at end of file
++  // Skip Next.js internals, the Studio, API routes and any file with an
++  // extension (logos, the PDF worker, favicon...), so those are served as-is.
++  matcher: ["/((?!_next|admin|api|.*\\..*).*)"],
++};
+diff --git a/next.config.ts b/next.config.ts
+index 979c9c8..21e9082 100644
+--- a/next.config.ts
++++ b/next.config.ts
+@@ -1,5 +1,8 @@
+-
+ import type { NextConfig } from "next";
++import { SH_DOMAIN_ROUTE, SH_HOST_PATTERN, SH_ORIGIN } from "./lib/sensuousHeirlooms";
++
++const onHeirloomsDomain = [{ type: "host" as const, value: SH_HOST_PATTERN }];
++const onUhuruDomain = [{ type: "host" as const, value: "(www\\.)?uhuruphalafala\\.com" }];
+ 
+ const nextConfig: NextConfig = {
+   images: {
+@@ -14,11 +17,44 @@ const nextConfig: NextConfig = {
+ 
+   async redirects() {
+     return [
++      // Short link for Pralini Naidoo's contribution.
++      {
++        source: "/sonic",
++        has: onHeirloomsDomain,
++        destination: "/pralini-naidoo",
++        permanent: false,
++      },
+       {
+         source: "/sonic",
+-        destination: "/sensuousheirlooms/pralini-naidoo",
++        destination: `${SH_ORIGIN}/pralini-naidoo`,
+         permanent: false,
+       },
++
++      // Old sensuousheirlooms.com/sensuousheirlooms/<slug> links -> /<slug>.
++      // The internal route is also hidden from direct visits.
++      ...["/sensuousheirlooms", SH_DOMAIN_ROUTE].flatMap((prefix) => [
++        { source: prefix, has: onHeirloomsDomain, destination: "/", permanent: true },
++        {
++          source: `${prefix}/:slug`,
++          has: onHeirloomsDomain,
++          destination: "/:slug",
++          permanent: true,
++        },
++      ]),
++
++      // uhuruphalafala.com/sensuousheirlooms/... -> the publication's own domain.
++      {
++        source: "/sensuousheirlooms",
++        has: onUhuruDomain,
++        destination: `${SH_ORIGIN}/`,
++        permanent: true,
++      },
++      {
++        source: "/sensuousheirlooms/:slug",
++        has: onUhuruDomain,
++        destination: `${SH_ORIGIN}/:slug`,
++        permanent: true,
++      },
+     ];
+   },
+ };
+-- 
+2.43.0
+
