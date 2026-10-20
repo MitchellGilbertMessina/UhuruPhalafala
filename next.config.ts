@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/sonic",
-        destination: "/pralini-naidoo",
+        destination: "/sensuousheirlooms/pralini-naidoo",
         permanent: false,
       },
     ];
