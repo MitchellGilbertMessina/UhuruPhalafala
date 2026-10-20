@@ -10,7 +10,11 @@ export const imageChapter = defineType({
   ],
 
   preview: {
-    select: { title: "contributor", subtitle: "title" },
+    select: { title: "contributor", subtitle: "title", open: "open" },
+    prepare: ({ title, subtitle, open }) => ({
+      title,
+      subtitle: `${open ? "● Open" : "○ Closed"} · ${(subtitle ?? "").replace(/\n/g, " / ")}`,
+    }),
   },
 
   fields: [
@@ -112,11 +116,8 @@ export const imageChapter = defineType({
             defineField({ name: "transcript", type: "text" }),
           ],
           preview: {
-            select: { title: "contributor", subtitle: "title", open: "open" },
-            prepare: ({ title, subtitle, open }) => ({
-              title,
-              subtitle: `${open ? "● Open" : "○ Closed"} · ${(subtitle ?? "").replace(/\n/g, " / ")}`,
-            }),
+            select: { title: "title" },
+            prepare: ({ title }) => ({ title: title || "Untitled recording", subtitle: "Audio recording" }),
           },
         }),
 
