@@ -1,5 +1,6 @@
-
+"use client";
 /* eslint-disable @next/next/no-img-element */
+import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { landing } from "@/content/sensuousHeirloomsLanding";
 import styles from "./PublicationLanding.module.css";
@@ -14,6 +15,15 @@ export default function PublicationLanding({
   aboutActive,
   onAdvance,
 }: Props) {
+  const [bgLoaded, setBgLoaded] = useState(false);
+  const bgRef = useRef<HTMLImageElement>(null);
+
+  // Covers the sharp background finishing before the page hydrated.
+  useEffect(() => {
+    const img = bgRef.current;
+    if (img?.complete && img.naturalWidth > 0) setBgLoaded(true);
+  }, []);
+
   const handleStageClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
 
@@ -50,13 +60,32 @@ export default function PublicationLanding({
       data-reader-page="landing"
     >
       <div className={styles.stage} onClick={handleStageClick}>
-        <picture className={styles.bg}>
-          <source
-            media="(max-width: 700px)"
-            srcSet={landing.bgPortraitSrc}
-          />
-          <img src={landing.bgLandscapeSrc} alt="" />
-        </picture>
+        {/* Three layers, blurry to sharp: CSS preview, low file, full srcSet. */}
+        <div className={styles.bg} data-loaded={bgLoaded}>
+          <picture>
+            <source media="(max-width: 700px)" srcSet={landing.bg.portrait.low} />
+            <img className={styles.bgLow} src={landing.bg.landscape.low} alt="" />
+          </picture>
+
+          <picture>
+            <source
+              media="(max-width: 700px)"
+              srcSet={landing.bg.portrait.srcSet}
+              sizes={landing.bg.portrait.sizes}
+            />
+            <img
+              ref={bgRef}
+              className={styles.bgFull}
+              src={landing.bg.landscape.src}
+              srcSet={landing.bg.landscape.srcSet}
+              sizes={landing.bg.landscape.sizes}
+              alt=""
+              fetchPriority="high"
+              decoding="async"
+              onLoad={() => setBgLoaded(true)}
+            />
+          </picture>
+        </div>
 
         <div className={styles.names}>
           <picture>

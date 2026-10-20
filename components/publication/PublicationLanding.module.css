@@ -34,6 +34,44 @@
   object-position: center;
 }
 
+/* Loading in stages, blurry to sharp.
+   1. A 24px-wide preview embedded right here, so colour is there instantly.
+   2. The low file (~25 KB), softened so it reads as out of focus.
+   3. The full image, which fades in once it has loaded. */
+.bg::before {
+  content: "";
+  position: absolute;
+  inset: -40px;               /* hide the blur's soft edges */
+  background: url("data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAADQBACdASoYABQAPtFcpU6oJSMiKAqpABoJQBBeJSACXPoxoDrN/9AVegZi1jTjgAD9RsaSS3Hsc5tK8PHLoq/JT2N3/4nmaklfCDUffKv55dB8xs1j4bC6IMFaD8LV6o8ZKWo7Q4U1a82psjAlKJ5QAAA=") center / cover;
+  filter: blur(24px);
+}
+
+.bgLow {
+  filter: blur(10px);
+  transform: scale(1.04);     /* hide the blur's soft edges */
+}
+
+.bgFull {
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+
+.bg[data-loaded="true"] .bgFull {
+  opacity: 1;
+}
+
+@media (max-width: 700px) {
+  .bg::before {
+    background-image: url("data:image/webp;base64,UklGRqQAAABXRUJQVlA4IJgAAABQBgCdASoYACgAPtFYo00oJSMiMBVaqQAaCUAW2QF8pN+sR8IkJrzaYpyNXMmt3HBfovwneefjZc3gAADbnGTo2mpAoNykktfTVk2h8XbRdFHE5kHinnrTgUTmdDXJI5U1VOUw0rBr/+5F1ALDpiDmK4B5PP2fzFabIpmgCCaLYwzxMZXWuPutxpgUMOxmnWc6akJmpwAAAA==");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bgFull {
+    transition: none;
+  }
+}
+
 
 /* Names: visible at the start, gone by p 0.3, drifting up slightly */
 .names {
