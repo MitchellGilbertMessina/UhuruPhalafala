@@ -34,6 +34,13 @@ function sized(url: string, width = 1600) {
     : url;
 }
 
+// Let phones download a smaller slide than desktops.
+const SLIDE_SIZES = "(max-width: 700px) 96vw, 70vw";
+
+function slideSrcSet(url: string) {
+  return [800, 1200, 1600].map((w) => `${sized(url, w)} ${w}w`).join(", ");
+}
+
 type ParsedVideo = {
   provider: "youtube" | "vimeo";
   id: string;
@@ -200,7 +207,8 @@ type Slide = {
 function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [current, setCurrent] = useState(0);
-  const [reach, setReach] = useState(3); // how many slides are loaded ahead
+  // The slide we just left, kept in the page so it can fade out.
+  const [previous, setPrevious] = useState<number | null>(null);
   const [duration, setDuration] = useState(0);
 
   const slides = useMemo<Slide[]>(() => {
@@ -237,10 +245,25 @@ function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
     }));
   }, [item.slides, item.images, item.slideDuration, duration]);
 
-  // Keep loading a few slides ahead of whichever one is showing.
+  // Only a few slides live in the page at once (the one fading out, the
+  // current one and the next). Keeping every slide decoded runs phones out of
+  // memory and Safari reloads or crashes the tab. The slide after next is
+  // fetched into the browser cache so it still appears without a delay.
   useEffect(() => {
-    setReach((r) => Math.max(r, current + 3));
-  }, [current]);
+    const upcoming = slides[current + 2];
+    if (!upcoming?.url) return;
+
+    const img = new Image();
+    img.sizes = SLIDE_SIZES;
+    img.srcset = slideSrcSet(upcoming.url);
+    img.src = sized(upcoming.url);
+  }, [current, slides]);
+
+  const show = (index: number) => {
+    if (index === current) return;
+    setPrevious(current);
+    setCurrent(index);
+  };
 
   if (!slides.length) return null;
 
@@ -258,13 +281,13 @@ function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
       if (slides[i].start <= audio.currentTime) index = i;
       else break;
     }
-    setCurrent(index);
+    show(index);
   };
 
   // Navigating the slides moves the recording to that slide's moment.
   const go = (target: number) => {
     const index = Math.max(0, Math.min(slides.length - 1, target));
-    setCurrent(index);
+    show(index);
 
     const audio = audioRef.current;
     const start = slides[index].start;
@@ -281,11 +304,13 @@ function SlideshowPlayer({ item }: { item: SlideshowMedia }) {
     <figure className={styles.item}>
       <div className={styles.stage} style={{ aspectRatio: ratio }}>
         {slides.map((slide, i) =>
-          i <= reach ? (
+          i === previous || i === current || i === current + 1 ? (
             <img
               key={slide._key}
               className={`${styles.slide} ${i === current ? styles.slideActive : ""}`}
               src={sized(slide.url!)}
+              srcSet={slideSrcSet(slide.url!)}
+              sizes={SLIDE_SIZES}
               alt={slide.alt ?? ""}
               decoding="async"
               aria-hidden={i !== current}

@@ -1,20 +1,15 @@
-import { redirect } from "next/navigation";
-import { getImageChapters } from "@/sanity/sanity-utils";
-import { isOpenChapter } from "@/types/imageChapter";
-import ImagePublicationReader from "@/components/publication/ImagePublicationReader";
+// localhost:3000/sensuousheirlooms/<slug> (on the live domain this redirects to /<slug>)
+import { ChapterPage, chapterMetadata } from "@/components/publication/heirloomsRoutes";
 
-export default async function ImageChapterPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export const revalidate = 60;
+
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props) {
+  return chapterMetadata((await params).slug);
+}
+
+export default async function Page({ params }: Props) {
   const { slug } = await params;
-  const chapters = await getImageChapters();
-  const chapter = chapters.find((item) => item.slug === slug);
-
-  if (!chapter || !isOpenChapter(chapter)) {
-    redirect("/sensuousheirlooms");
-  }
-
-  return <ImagePublicationReader chapters={chapters} initialSlug={slug} />;
+  return <ChapterPage slug={slug} basePath="/sensuousheirlooms" />;
 }

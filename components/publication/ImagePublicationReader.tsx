@@ -15,6 +15,8 @@ import styles from "./ImagePublicationReader.module.css";
 type Props = {
   chapters: ImageChapter[];
   initialSlug: string | null;
+  // "" on www.sensuousheirlooms.com, "/sensuousheirlooms" in local development.
+  basePath: string;
 };
 
 const LANDING_KEY = "landing";
@@ -74,7 +76,10 @@ function measureLanding(readerEl: HTMLElement | null) {
 export default function ImagePublicationReader({
   chapters,
   initialSlug,
+  basePath,
 }: Props) {
+  const homePath = basePath || "/";
+
   const startsPastLanding = initialSlug !== null;
 
   const [activeKey, setActiveKey] = useState<string>(
@@ -118,9 +123,7 @@ export default function ImagePublicationReader({
   useEffect(() => {
     if (!initialScrollDone.current) return;
 
-    const expectedPath = onLanding
-      ? "/sensuousheirlooms"
-      : `/sensuousheirlooms/${activeKey}`;
+    const expectedPath = onLanding ? homePath : `${basePath}/${activeKey}`;
 
     if (window.location.pathname !== expectedPath) {
       window.history.replaceState(
@@ -129,7 +132,7 @@ export default function ImagePublicationReader({
         expectedPath
       );
     }
-  }, [activeKey, onLanding]);
+  }, [activeKey, onLanding, basePath, homePath]);
 
   // Work out which section sits near the top of the viewport.
   useEffect(() => {
@@ -343,7 +346,7 @@ export default function ImagePublicationReader({
       } as CSSProperties}
     >
       <Link ref={logoRef}
-        href="/sensuousheirlooms"
+        href={homePath}
         className={styles.logo}
         data-after-landing={sidebarActive}
         onClick={goHome}
@@ -380,7 +383,7 @@ export default function ImagePublicationReader({
             className={styles.sidebarScroll}
           >
             <Link
-              href="/sensuousheirlooms"
+              href={homePath}
               className={styles.mobileHome}
               onClick={goHome}
             >
@@ -396,6 +399,7 @@ export default function ImagePublicationReader({
               <ContentsList
                 chapters={chapters}
                 activeSlug={activeSlug}
+                basePath={basePath}
                 onJump={jumpToChapter}
               />
             </details>
@@ -406,6 +410,7 @@ export default function ImagePublicationReader({
               <ContentsList
                 chapters={chapters}
                 activeSlug={activeSlug}
+                basePath={basePath}
                 onJump={jumpToChapter}
               />
             </div>
@@ -554,10 +559,12 @@ function DownloadIcon() {
 function ContentsList({
   chapters,
   activeSlug,
+  basePath,
   onJump,
 }: {
   chapters: ImageChapter[];
   activeSlug: string | null;
+  basePath: string;
   onJump: (slug: string) => void;
 }) {
   return (
@@ -580,7 +587,7 @@ function ContentsList({
             <li key={chapter._id}>
               {isOpenChapter(chapter) ? (
                 <Link
-                  href={`/sensuousheirlooms/${chapter.slug}`}
+                  href={`${basePath}/${chapter.slug}`}
                   data-slug={chapter.slug}
                   className={styles.contentsLink}
                   aria-current={
